@@ -1,0 +1,411 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Ticket Details - Nexus Service Desk</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-highest": "#dce3ee",
+                        "primary-container": "#3f79a9",
+                        "on-background": "#151c24",
+                        "tertiary-fixed-dim": "#f6bd65",
+                        "inverse-on-surface": "#ebf1fc",
+                        "secondary-container": "#93f3c8",
+                        "on-tertiary-container": "#fffcff",
+                        "outline": "#717880",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#ffddb0",
+                        "on-primary-fixed": "#001d32",
+                        "outline-variant": "#c1c7d0",
+                        "on-tertiary-fixed": "#281800",
+                        "on-secondary-fixed": "#002115",
+                        "surface": "#f7f9ff",
+                        "inverse-primary": "#96ccff",
+                        "on-surface": "#151c24",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#79d9b0",
+                        "on-primary-fixed-variant": "#004a75",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#cee5ff",
+                        "on-surface-variant": "#41474f",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#e8eef9",
+                        "on-tertiary-fixed-variant": "#614000",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#fdfcff",
+                        "surface-variant": "#dce3ee",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#7d5400",
+                        "surface-dim": "#d4dae5",
+                        "surface-tint": "#246291",
+                        "on-secondary-container": "#007151",
+                        "on-secondary-fixed-variant": "#005139",
+                        "primary-fixed-dim": "#96ccff",
+                        "secondary-fixed": "#95f5cb",
+                        "background": "#f7f9ff",
+                        "surface-container-high": "#e2e9f3",
+                        "primary": "#20608f",
+                        "secondary": "#006c4d",
+                        "tertiary-container": "#9a6c1b",
+                        "inverse-surface": "#2a3139",
+                        "surface-bright": "#f7f9ff",
+                        "surface-container-low": "#edf4ff",
+                        "error-container": "#ffdad6"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "gutter": "20px",
+                        "xl": "32px",
+                        "sidebar_width": "260px",
+                        "sm": "8px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "4px"
+                    },
+                    fontFamily: {
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "headline-sm": ["Inter"]
+                    },
+                    fontSize: {
+                        "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "headline-md": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-md": ["13px", { lineHeight: "16px", letterSpacing: "0.01em", fontWeight: "500" }],
+                        "label-sm": ["11px", { lineHeight: "16px", fontWeight: "600" }],
+                        "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "title-lg": ["18px", { lineHeight: "24px", fontWeight: "500" }],
+                        "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #F3F4EE; color: #1C1C1C; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .nexus-shadow { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background min-h-screen text-on-surface antialiased flex flex-col" style="background-color: rgb(243, 244, 238);">
+<!-- Top Navigation (Contextual, No Sidebar Nav as per request) -->
+<header class="bg-surface border-b border-outline-variant flex justify-between items-center px-lg py-md w-full sticky top-0 z-50">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary text-3xl">support_agent</span>
+<div>
+<h1 class="font-title-lg text-title-lg font-bold text-on-surface tracking-tight leading-none">NEXUS</h1>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Support Center</span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center gap-sm mr-md border-r border-outline-variant pr-md">
+<span class="font-label-md text-label-md text-on-surface-variant">Client:</span>
+<span class="font-label-md text-label-md font-bold">Acme Corp</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors flex items-center justify-center relative">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
+<img alt="Alex" class="w-full h-full object-cover" data-alt="A professional headshot of a business executive in a modern, light-filled office. The lighting is soft and bright, emphasizing a corporate modern aesthetic with off-white and charcoal tones. The mood is confident and approachable, fitting a high-end enterprise software portal." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAETBKKW9S3kle_m3lqYtIT-S2NBnrIf81zEhwXsZyF0Qx9w6vMCcMkDbHjS5MaAIG4ZdCvtvUAnNdiF3Afqu412OJv-54qzQNwAaaKp2jWmkguXancEvSNykRhoiErN2KIv1BUSvz5LXH8WzZt-OgkOVzZlxF675D9hNnt4LPSHbNfuzF5yCEyfdQv0jh4mnXdPg_-Z5amXXSzDaEMupaZZTzJ5IZI2ky8lYTX-4_n_aL9x_46cf7ifA">
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-[1440px] mx-auto px-md md:px-lg py-lg md:py-xl grid grid-cols-1 lg:grid-cols-12 gap-lg items-start">
+<!-- Back Navigation & Header -->
+<div class="lg:col-span-12 flex flex-col gap-md">
+<a class="inline-flex items-center gap-xs font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors w-fit" href="#">
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                Back to My Tickets
+            </a>
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<div class="flex flex-wrap items-center gap-sm mb-xs">
+<span class="font-label-md text-label-md font-bold text-primary">TK-1042</span>
+<span class="px-2 py-0.5 rounded-full bg-error/10 text-error font-label-sm text-label-sm uppercase tracking-wider">Bug</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">Sales Dashboard</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">Production</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Invoice PDF is not downloading</h2>
+</div>
+<div>
+<span class="inline-flex items-center gap-xs px-3 py-1.5 rounded-full bg-secondary-container/20 border border-secondary-container text-on-secondary-container font-label-md text-label-md font-bold">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                        In Development
+                    </span>
+</div>
+</div>
+<!-- Progress Tracker -->
+<div class="w-full overflow-x-auto scrollbar-hide py-sm">
+<div class="min-w-[800px] flex items-center justify-between relative">
+<!-- Connecting Line -->
+<div class="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-outline-variant -z-10"></div>
+<div class="absolute left-4 w-1/2 top-1/2 -translate-y-1/2 h-0.5 bg-primary -z-10"></div>
+<!-- Steps -->
+<div class="flex flex-col items-center gap-xs w-24">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center border-2 border-surface"><span class="material-symbols-outlined text-[14px]">check</span></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-center">Raised</span>
+</div>
+<div class="flex flex-col items-center gap-xs w-24">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center border-2 border-surface"><span class="material-symbols-outlined text-[14px]">check</span></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-center">Triaged</span>
+</div>
+<div class="flex flex-col items-center gap-xs w-24">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center border-2 border-surface"><span class="material-symbols-outlined text-[14px]">check</span></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-center">Estimated</span>
+</div>
+<div class="flex flex-col items-center gap-xs w-24">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center border-2 border-surface"><span class="material-symbols-outlined text-[14px]">check</span></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-center">Approved</span>
+</div>
+<div class="flex flex-col items-center gap-xs w-24">
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center border-2 border-surface ring-2 ring-primary-container"><span class="material-symbols-outlined text-[14px]">code</span></div>
+<span class="font-label-sm text-label-sm font-bold text-primary text-center">In Dev</span>
+</div>
+<div class="flex flex-col items-center gap-xs w-24">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest border-2 border-outline-variant flex items-center justify-center text-outline"><span class="material-symbols-outlined text-[14px]">bug_report</span></div>
+<span class="font-label-sm text-label-sm text-outline text-center">QA</span>
+</div>
+<div class="flex flex-col items-center gap-xs w-24">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest border-2 border-outline-variant flex items-center justify-center text-outline"><span class="material-symbols-outlined text-[14px]">rocket_launch</span></div>
+<span class="font-label-sm text-label-sm text-outline text-center">Deployed</span>
+</div>
+<div class="flex flex-col items-center gap-xs w-24">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest border-2 border-outline-variant flex items-center justify-center text-outline"><span class="material-symbols-outlined text-[14px]">task_alt</span></div>
+<span class="font-label-sm text-label-sm text-outline text-center">Resolved</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Left Column: Conversation & Content -->
+<div class="lg:col-span-8 flex flex-col gap-lg">
+<!-- Issue Summary Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md nexus-shadow">
+<div class="flex items-center gap-sm mb-sm border-b border-outline-variant pb-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">description</span>
+</div>
+<h3 class="font-title-lg text-title-lg text-on-surface">Original Request</h3>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant whitespace-pre-line">
+                    When I try to download an invoice PDF from the Sales Dashboard for Q3, the system throws a 500 error page. This is happening for all clients in the US region. I need to send these out by EOD Friday. 
+                    
+                    Steps to reproduce:
+                    1. Go to Sales Dashboard
+                    2. Filter by Q3, US Region
+                    3. Click 'Download PDF' on any row
+                    
+                    Result: Blank page with "Error 500: Internal Server Error".
+                </div>
+</div>
+<!-- AI Summary Card -->
+<div class="bg-surface-container border border-primary/20 rounded-lg p-md flex flex-col gap-sm relative overflow-hidden" style="background-color: rgb(243, 244, 238);">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full pointer-events-none"></div>
+<div class="flex items-center gap-xs text-primary font-label-sm text-label-sm uppercase tracking-wider">
+<span class="material-symbols-outlined text-[16px]">smart_toy</span>
+                    AI-Generated Summary
+                </div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div>
+<h4 class="font-label-md text-label-md font-bold mb-xs">What we understand:</h4>
+<ul class="list-disc list-inside font-body-sm text-body-sm text-on-surface-variant space-y-1">
+<li class="">Issue occurs specifically in US Region, Q3 filter.</li>
+<li class="">Action triggered is 'Download PDF'.</li>
+<li class="">Resulting in a 500 Internal Server Error.</li>
+</ul>
+</div>
+<div>
+<h4 class="font-label-md text-label-md font-bold mb-xs">Possible Cause:</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                            Based on recent deployments, the PDF generation library updated on Tuesday. It may be failing on specific locale formatting requirements for US addresses, causing the backend service to crash during rendering.
+                        </p>
+</div>
+</div>
+</div>
+<!-- Conversation Thread -->
+<div class="flex flex-col gap-md">
+<h3 class="font-title-lg text-title-lg text-on-surface border-b border-outline-variant pb-xs">Activity</h3>
+<!-- Client Message -->
+<div class="flex gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-outline-variant">
+<img alt="John Mathew" class="w-full h-full object-cover" data-alt="A portrait of a male client, John Mathew, in his late 30s, wearing a casual button-down shirt. The setting is a bright, modern office with soft natural light. The aesthetic is professional and clean, matching a corporate light-mode theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcmdcz2RuxyBvn98wB15YlGzlMX8qeuGSYcrHzFmHGwzDSzMR0VnZP6PXeTxbdV5HXrxqT4cF1c-KQZo_tZ3yii8Q9Nfa-NCDtdIxIlnndP96e-Sdo84ynRPT2orZGepCRCq35qcQMOVJgPEPffdTSgLJZh5YnvjWsBTxyWwa4My974wc_C8KvngZxD_R6b3qd5ax-T25dEenG_Pk7u1zXU1R8aPPEOc00j3J39Goh53fSY2dS7g38MQ">
+</div>
+<div class="flex flex-col gap-xs max-w-[85%]">
+<div class="flex items-baseline gap-sm">
+<span class="font-label-md text-label-md font-bold">John Mathew (Client)</span>
+<span class="font-label-sm text-label-sm text-outline">Oct 12, 09:15 AM</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg rounded-tl-none p-md font-body-sm text-body-sm text-on-surface">
+                            Hi team, just following up on this. It's becoming critical for our billing cycle. Any updates? I've attached a screenshot of the exact error screen just in case.
+                        </div>
+</div>
+</div>
+<!-- Support Team Message -->
+<div class="flex gap-sm flex-row-reverse">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined">support_agent</span>
+</div>
+<div class="flex flex-col gap-xs max-w-[85%] items-end">
+<div class="flex items-baseline gap-sm flex-row-reverse">
+<span class="font-label-md text-label-md font-bold">Sarah Jenkins (Nexus Support)</span>
+<span class="font-label-sm text-label-sm text-outline">Oct 12, 10:30 AM</span>
+</div>
+<div class="bg-primary/5 border border-primary/20 rounded-lg rounded-tr-none p-md font-body-sm text-body-sm text-on-surface text-right">
+                            Hi John, we've identified the root cause. It's related to a recent update in the PDF library struggling with specific regional data formats. Our engineering team has prepared an estimate for the fix, which is now in your dashboard for review. Once approved, we can hotfix this immediately.
+                        </div>
+</div>
+</div>
+<!-- Client Message -->
+<div class="flex gap-sm">
+<div class="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-outline-variant">
+<img alt="John Mathew" class="w-full h-full object-cover" data-alt="A portrait of a male client, John Mathew, in his late 30s, wearing a casual button-down shirt. The setting is a bright, modern office with soft natural light. The aesthetic is professional and clean, matching a corporate light-mode theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDGyP8aMMHowtCOmu3D9Hh1tQo8JUqhjckQMqL6NJU_-sOfV8OcGAaXJs0ucoU1vnc_ktlMUCByufWGoDztqpoGHcZBUhPFYeeOg7FDld5w7fTvYrCw1dLWuFNwRR8Bf6mRk4HpXLVXWoofC16Yu8aB6NfVY3MV6CPW4OlOjXohxim5VRwGAOFkYKRGXhiS5vUE6KGYhbllf2M2KKnhQbVt3HBXA4SOby3wWPzUISA_KywCW_xNyoLbQ">
+</div>
+<div class="flex flex-col gap-xs max-w-[85%]">
+<div class="flex items-baseline gap-sm">
+<span class="font-label-md text-label-md font-bold">John Mathew (Client)</span>
+<span class="font-label-sm text-label-sm text-outline">Oct 12, 11:05 AM</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg rounded-tl-none p-md font-body-sm text-body-sm text-on-surface">
+                            Approved. Please proceed as fast as possible. Thank you Sarah.
+                        </div>
+</div>
+</div>
+</div>
+<!-- Message Composer -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm mt-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<textarea class="w-full border-none bg-transparent focus:ring-0 resize-none font-body-sm text-body-sm text-on-surface placeholder:text-outline" placeholder="Type your message here..." rows="3"></textarea>
+<div class="flex justify-between items-center mt-sm pt-sm border-t border-outline-variant">
+<button class="p-2 text-outline hover:text-primary transition-colors rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<button class="bg-primary hover:bg-primary/90 text-on-primary px-4 py-2 rounded-md font-label-md text-label-md transition-colors flex items-center gap-xs">
+                        Send Reply
+                        <span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Sidebar Metadata -->
+<div class="lg:col-span-4 flex flex-col gap-md">
+<!-- Action Required Section -->
+<div class="bg-error/5 border border-error/20 rounded-lg p-md">
+<div class="flex items-start gap-sm mb-sm">
+<span class="material-symbols-outlined text-error mt-0.5">warning</span>
+<div>
+<h4 class="font-label-md text-label-md font-bold text-on-surface">Action Required</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">An estimate is ready for your review to proceed with the bug fix.</p>
+</div>
+</div>
+<button class="w-full bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-highest text-on-surface font-label-md text-label-md py-2 rounded-md transition-colors">
+                    Review Estimate
+                </button>
+</div>
+<!-- Estimate Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md nexus-shadow">
+<h4 class="font-title-lg text-title-lg text-on-surface border-b border-outline-variant pb-xs mb-sm">Development Estimate</h4>
+<div class="flex flex-col gap-sm font-body-sm text-body-sm">
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Effort:</span>
+<span class="font-bold">24h</span>
+</div>
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Estimated Delivery:</span>
+<span class="font-bold">3-4 days</span>
+</div>
+<div class="flex justify-between items-center pt-sm border-t border-outline-variant">
+<span class="text-on-surface-variant">Status:</span>
+<span class="text-primary font-bold">Approved</span>
+</div>
+</div>
+</div>
+<!-- Ticket Metadata -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md">
+<h4 class="font-title-lg text-title-lg text-on-surface border-b border-outline-variant pb-xs mb-sm">Details</h4>
+<div class="flex flex-col gap-sm font-body-sm text-body-sm">
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Created By:</span>
+<span class="">John Mathew</span>
+</div>
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Environment:</span>
+<span class="">Production</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant">Priority:</span>
+<span class="px-2 py-0.5 rounded bg-error/10 text-error font-label-sm text-label-sm uppercase">High</span>
+</div>
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Module:</span>
+<span class="">Billing</span>
+</div>
+</div>
+</div>
+<!-- Attachments -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md">
+<h4 class="font-title-lg text-title-lg text-on-surface border-b border-outline-variant pb-xs mb-sm">Attachments (1)</h4>
+<div class="flex items-center gap-sm p-sm border border-outline-variant rounded-md hover:bg-surface-container transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-outline group-hover:text-primary">image</span>
+<div class="flex flex-col flex-1 overflow-hidden">
+<span class="font-label-md text-label-md truncate">invoice-error-screenshot.png</span>
+<span class="font-label-sm text-label-sm text-outline">1.2 MB</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary">download</span>
+</div>
+</div>
+<!-- Ticket Timeline -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md">
+<h4 class="font-title-lg text-title-lg text-on-surface border-b border-outline-variant pb-xs mb-sm">Timeline</h4>
+<div class="relative pl-4 border-l border-outline-variant space-y-sm py-xs">
+<div class="relative">
+<div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-outline-variant border-2 border-surface-container-lowest"></div>
+<p class="font-label-sm text-label-sm text-outline">Oct 11, 04:20 PM</p>
+<p class="font-body-sm text-body-sm">Ticket created by John Mathew</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-outline-variant border-2 border-surface-container-lowest"></div>
+<p class="font-label-sm text-label-sm text-outline">Oct 11, 05:00 PM</p>
+<p class="font-body-sm text-body-sm">Triaged to Dev Team Alpha</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-outline-variant border-2 border-surface-container-lowest"></div>
+<p class="font-label-sm text-label-sm text-outline">Oct 12, 10:15 AM</p>
+<p class="font-body-sm text-body-sm">Estimate prepared</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-primary border-2 border-surface-container-lowest"></div>
+<p class="font-label-sm text-label-sm text-primary font-bold">Oct 12, 11:05 AM</p>
+<p class="font-body-sm text-body-sm font-medium">Estimate approved. Moved to In Dev.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+
+
+
+
+
+</body></html>

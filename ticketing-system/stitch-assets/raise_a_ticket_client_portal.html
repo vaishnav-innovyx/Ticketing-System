@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Raise a Ticket - Support Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#dce3ee",
+                      "on-surface": "#151c24",
+                      "surface-container": "#e8eef9",
+                      "error-container": "#ffdad6",
+                      "surface-variant": "#dce3ee",
+                      "on-tertiary-fixed-variant": "#614000",
+                      "on-background": "#151c24",
+                      "surface-dim": "#d4dae5",
+                      "on-primary-fixed": "#001d32",
+                      "on-secondary-fixed-variant": "#005139",
+                      "inverse-primary": "#96ccff",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-container": "#fffcff",
+                      "secondary-fixed": "#95f5cb",
+                      "on-primary-fixed-variant": "#004a75",
+                      "on-tertiary-fixed": "#281800",
+                      "surface": "#f7f9ff",
+                      "primary-container": "#3f79a9",
+                      "on-secondary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-tint": "#246291",
+                      "surface-container-low": "#edf4ff",
+                      "background": "#f7f9ff",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-container": "#fdfcff",
+                      "secondary-container": "#93f3c8",
+                      "inverse-surface": "#2a3139",
+                      "error": "#ba1a1a",
+                      "on-error": "#ffffff",
+                      "tertiary-fixed-dim": "#f6bd65",
+                      "tertiary": "#7d5400",
+                      "tertiary-container": "#9a6c1b",
+                      "inverse-on-surface": "#ebf1fc",
+                      "on-secondary-fixed": "#002115",
+                      "tertiary-fixed": "#ffddb0",
+                      "on-primary": "#ffffff",
+                      "outline": "#717880",
+                      "primary-fixed": "#cee5ff",
+                      "on-secondary-container": "#007151",
+                      "secondary": "#006c4d",
+                      "on-surface-variant": "#41474f",
+                      "surface-container-high": "#e2e9f3",
+                      "outline-variant": "#c1c7d0",
+                      "surface-bright": "#f7f9ff",
+                      "primary-fixed-dim": "#96ccff",
+                      "primary": "#20608f",
+                      "secondary-fixed-dim": "#79d9b0"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "sidebar_width": "260px",
+                      "md": "16px",
+                      "xs": "4px",
+                      "gutter": "20px",
+                      "sm": "8px",
+                      "lg": "24px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "title-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: #F3F4EE; /* Brand anchor override for canvas background */
+        }
+        .form-input-focus:focus {
+            border-color: #3F79A9;
+            box-shadow: 0 0 0 2px rgba(63, 121, 169, 0.2);
+            outline: none;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .radio-card:has(input:checked) {
+            border-color: #3F79A9;
+            background-color: #edf4ff; /* surface-container-low */
+        }
+        .radio-card:has(input:checked) .radio-icon {
+            color: #3F79A9;
+        }
+    </style>
+</head>
+<body class="text-on-surface antialiased min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline fixed top-0 w-full z-50 flex justify-between items-center px-lg h-16">
+<div class="flex items-center gap-md">
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface dark:text-inverse-on-surface">Support Center</span>
+<div class="h-6 w-px bg-outline-variant mx-sm"></div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Acme Corporation</span>
+</div>
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-sm cursor-pointer hover:opacity-80 transition-opacity">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md text-label-md">
+                    JM
+                </div>
+<span class="font-label-md text-label-md text-on-surface">John Mathew</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-xl px-md md:px-lg max-w-[1440px] mx-auto w-full flex flex-col gap-lg">
+<!-- Page Header -->
+<div class="flex flex-col gap-sm">
+<a class="flex items-center gap-xs font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors w-fit" href="#">
+<span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                Back to Support Center
+            </a>
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface">Raise a Ticket</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Provide details about your issue or request to help us resolve it quickly.</p>
+</div>
+</div>
+<!-- 2-Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg items-start">
+<!-- Left Column (Form) - 8 cols -->
+<div class="lg:col-span-8 flex flex-col gap-lg">
+<!-- Section 1: Issue Details -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md card-shadow flex flex-col gap-md">
+<h2 class="font-title-lg text-title-lg text-on-surface pb-sm border-b border-outline-variant">Tell us about the issue</h2>
+<div class="flex flex-col gap-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="issue-title">Issue Title <span class="text-error">*</span></label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-sm py-sm font-body-md text-body-md form-input-focus text-on-surface placeholder:text-outline" id="issue-title" placeholder="Brief summary of the problem" type="text"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="issue-desc">Description <span class="text-error">*</span></label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant rounded-DEFAULT px-sm py-sm font-body-md text-body-md form-input-focus text-on-surface placeholder:text-outline resize-y" id="issue-desc" placeholder="Provide detailed information about the issue, steps to reproduce, and expected behavior." rows="6"></textarea>
+</div>
+</div>
+<!-- Section 2: Request Type -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md card-shadow flex flex-col gap-md">
+<h2 class="font-title-lg text-title-lg text-on-surface pb-sm border-b border-outline-variant">What kind of request is this?</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-sm">
+<label class="radio-card border border-outline-variant rounded-lg p-sm flex items-center gap-sm cursor-pointer hover:bg-surface-container-low transition-colors relative">
+<input checked="" class="peer sr-only" name="request_type" type="radio" value="issue"/>
+<span class="material-symbols-outlined radio-icon text-on-surface-variant">bug_report</span>
+<span class="font-label-md text-label-md text-on-surface">Report an Issue</span>
+<div class="absolute right-sm top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-outline peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="w-2 h-2 rounded-full bg-on-primary opacity-0 peer-checked:opacity-100"></div>
+</div>
+</label>
+<label class="radio-card border border-outline-variant rounded-lg p-sm flex items-center gap-sm cursor-pointer hover:bg-surface-container-low transition-colors relative">
+<input class="peer sr-only" name="request_type" type="radio" value="enhancement"/>
+<span class="material-symbols-outlined radio-icon text-on-surface-variant">upgrade</span>
+<span class="font-label-md text-label-md text-on-surface">Request an Enhancement</span>
+<div class="absolute right-sm top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-outline peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="w-2 h-2 rounded-full bg-on-primary opacity-0 peer-checked:opacity-100"></div>
+</div>
+</label>
+<label class="radio-card border border-outline-variant rounded-lg p-sm flex items-center gap-sm cursor-pointer hover:bg-surface-container-low transition-colors relative">
+<input class="peer sr-only" name="request_type" type="radio" value="question"/>
+<span class="material-symbols-outlined radio-icon text-on-surface-variant">help_outline</span>
+<span class="font-label-md text-label-md text-on-surface">Ask a Question</span>
+<div class="absolute right-sm top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border border-outline peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<div class="w-2 h-2 rounded-full bg-on-primary opacity-0 peer-checked:opacity-100"></div>
+</div>
+</label>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="flex items-center justify-end gap-md pt-sm">
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface font-label-md text-label-md px-lg py-sm rounded-DEFAULT hover:bg-surface-container-high transition-colors">
+                        Save as Draft
+                    </button>
+<button class="bg-primary-container text-on-primary-container font-label-md text-label-md px-lg py-sm rounded-DEFAULT hover:opacity-90 transition-opacity">
+                        Submit Ticket
+                    </button>
+</div>
+</div>
+<!-- Right Column (AI Panel) - 4 cols -->
+<div class="lg:col-span-4 flex flex-col gap-lg sticky top-24">
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-md card-shadow flex flex-col gap-md relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-primary-fixed/20 to-transparent opacity-50 z-0"></div>
+<div class="relative z-10 flex flex-col gap-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<h2 class="font-title-lg text-title-lg text-on-surface">AI-assisted ticket review</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Let our AI assistant review your ticket before submission to ensure all necessary details are included for a faster resolution.</p>
+<ul class="flex flex-col gap-sm">
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Understand the issue context</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Analyze attached screenshots</span>
+</li>
+<li class="flex items-start gap-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface">Identify missing information</span>
+</li>
+</ul>
+<button class="mt-sm w-full bg-surface-container-lowest border border-primary text-primary font-label-md text-label-md px-lg py-sm rounded-DEFAULT hover:bg-surface-container-low transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[18px]">magic_button</span>
+                            Review My Ticket
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

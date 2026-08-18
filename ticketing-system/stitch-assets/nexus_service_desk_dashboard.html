@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+
+<html class="h-full antialiased bg-inverse-on-surface" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nexus Service Desk - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#717880",
+                        "surface-container-high": "#e2e9f3",
+                        "surface-bright": "#f7f9ff",
+                        "on-surface": "#151c24",
+                        "on-surface-variant": "#41474f",
+                        "tertiary": "#7d5400",
+                        "surface": "#f7f9ff",
+                        "inverse-surface": "#2a3139",
+                        "tertiary-fixed": "#ffddb0",
+                        "on-primary-fixed": "#001d32",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#dce3ee",
+                        "on-primary-fixed-variant": "#004a75",
+                        "secondary-fixed": "#95f5cb",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#614000",
+                        "secondary-container": "#93f3c8",
+                        "on-secondary-container": "#007151",
+                        "surface-container": "#e8eef9",
+                        "inverse-on-surface": "#ebf1fc",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#96ccff",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "on-background": "#151c24",
+                        "surface-tint": "#246291",
+                        "background": "#f7f9ff",
+                        "inverse-primary": "#96ccff",
+                        "on-secondary-fixed-variant": "#005139",
+                        "secondary-fixed-dim": "#79d9b0",
+                        "surface-container-low": "#edf4ff",
+                        "surface-variant": "#dce3ee",
+                        "on-primary-container": "#fdfcff",
+                        "tertiary-container": "#9a6c1b",
+                        "secondary": "#006c4d",
+                        "primary-fixed": "#cee5ff",
+                        "on-secondary-fixed": "#002115",
+                        "primary-container": "#3f79a9",
+                        "outline-variant": "#c1c7d0",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-container": "#fffcff",
+                        "primary": "#20608f",
+                        "surface-dim": "#d4dae5",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#281800",
+                        "tertiary-fixed-dim": "#f6bd65"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "gutter": "20px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "sidebar_width": "260px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-md": ["13px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #dce3ee; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c1c7d0; }
+        
+        .card-shadow { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); }
+        .thin-border { border: 1px solid #D9DDE0; }
+    </style>
+</head>
+<body class="h-full flex text-on-surface bg-[#F3F4EE] font-body-md text-body-md overflow-hidden">
+<!-- SideNavBar (from JSON) -->
+<nav class="w-sidebar_width h-screen fixed left-0 top-0 bg-inverse-surface dark:bg-inverse-surface border-r border-outline-variant flex flex-col py-lg z-20 transition-all duration-300 transform -translate-x-full md:translate-x-0" id="sidebar">
+<div class="px-lg mb-8 flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm font-bold text-surface-lowest tracking-tight truncate">NEXUS SERVICE DESK</span>
+<button class="md:hidden text-surface-variant hover:text-surface-lowest" onclick="toggleSidebar()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<ul class="flex-1 px-4 space-y-1 overflow-y-auto">
+<!-- Active Tab: Dashboard -->
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-surface-bright font-bold border-l-[3px] border-primary-container bg-on-surface-variant/20 hover:bg-on-surface-variant/10 transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined fill" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-surface-variant font-medium hover:bg-on-surface-variant/10 transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="confirmation_number">confirmation_number</span>
+<span class="font-label-md text-label-md">Tickets</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-surface-variant font-medium hover:bg-on-surface-variant/10 transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Clients</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-surface-variant font-medium hover:bg-on-surface-variant/10 transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="folder_special">folder_special</span>
+<span class="font-label-md text-label-md">Projects</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-surface-variant font-medium hover:bg-on-surface-variant/10 transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="request_quote">request_quote</span>
+<span class="font-label-md text-label-md">Estimates</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-surface-variant font-medium hover:bg-on-surface-variant/10 transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="font-label-md text-label-md">Team</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-surface-variant font-medium hover:bg-on-surface-variant/10 transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+</li>
+</ul>
+<div class="px-4 mt-auto pt-4 border-t border-outline-variant/30">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-surface-variant font-medium hover:bg-on-surface-variant/10 transition-colors scale-95 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col md:ml-[260px] w-full min-h-screen">
+<!-- TopNavBar (from JSON) -->
+<header class="bg-surface border-b border-outline-variant h-16 shrink-0 flex justify-between items-center px-lg sticky top-0 z-10 w-full">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface-variant hover:text-primary transition-all p-2 -ml-2 rounded-md hover:bg-surface-variant/50 cursor-pointer active:opacity-70" onclick="toggleSidebar()">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="hidden sm:flex font-title-lg text-title-lg font-bold text-on-surface items-center gap-2">
+                    Nexus Service Desk
+                </div>
+</div>
+<!-- Search Bar (on_left in JSON, placing in middle for balance or right aligned based on layout, but spec says on_left relative to actions) -->
+<div class="flex-1 max-w-md mx-4 md:mx-8 relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+<input class="w-full h-10 pl-10 pr-4 rounded-md border border-outline-variant bg-surface-container-lowest font-body-sm text-body-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-all placeholder:text-outline" placeholder="Search tickets, clients..." type="text"/>
+</div>
+<div class="flex items-center gap-2 sm:gap-4">
+<button class="sm:hidden text-on-surface-variant p-2 rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</button>
+<button class="relative text-on-surface-variant hover:text-primary transition-all p-2 rounded-full hover:bg-surface-variant cursor-pointer active:opacity-70">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full border border-surface"></span>
+</button>
+<div class="h-8 w-px bg-outline-variant/50 mx-1 hidden sm:block"></div>
+<button class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+<img alt="Alex" class="w-8 h-8 rounded-full object-cover thin-border bg-surface-variant" data-alt="A professional headshot of a corporate employee in a light blue collared shirt against a neutral gray background. The lighting is bright and even, typical of a modern office environment. The expression is friendly but focused." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-HcLWDUVi_jvk8kjEQQfrQCaxP5dXuUjfbm1vrWIY516uGt6V8R8tOeE_dSS0UrseWJccRksZtuwet-8dKoPaunGg9RHH4dGCuZSqdD8EYQZQhjUE9Bm8ILOayi67bwJBQasJ5xmPbZ47FTngdjdi7PWFSp0mak24QEHP6o8RH4IXi3qGXM3X5nWlJ8ubYvu3AwbaC8KKnToyVFe5J6DpcZMXtQn1RkeSLDwKJooJRmbop7a4PjAcAg"/>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px] hidden sm:block">arrow_drop_down</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-md md:p-lg">
+<div class="max-w-[1440px] mx-auto space-y-lg">
+<!-- Top Greeting -->
+<div>
+<h1 class="font-headline-md text-headline-md text-on-surface">Good morning, Alex.</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Here's what's happening across your tickets and projects.</p>
+</div>
+<!-- KPI Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-md thin-border card-shadow flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">Open Tickets</p>
+<p class="font-display-lg text-display-lg text-on-surface mt-1">24</p>
+</div>
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-md thin-border card-shadow flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">Awaiting Client</p>
+<p class="font-display-lg text-display-lg text-on-surface mt-1">8</p>
+</div>
+<div class="w-12 h-12 rounded-lg bg-tertiary-fixed/30 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">pending_actions</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-md thin-border card-shadow flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">In Development</p>
+<p class="font-display-lg text-display-lg text-on-surface mt-1">12</p>
+</div>
+<div class="w-12 h-12 rounded-lg bg-secondary-fixed/30 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">code</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest rounded-xl p-md thin-border card-shadow flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">Resolved This Month</p>
+<p class="font-display-lg text-display-lg text-on-surface mt-1">46</p>
+</div>
+<div class="w-12 h-12 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Middle Row: Ticket Activity Chart -->
+<div class="bg-surface-container-lowest rounded-xl p-md lg:p-lg thin-border card-shadow">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+<h2 class="font-title-lg text-title-lg text-on-surface">Ticket Activity</h2>
+<div class="relative">
+<select class="appearance-none bg-surface border border-outline-variant text-on-surface-variant font-label-md text-label-md rounded-md pl-3 pr-8 py-1.5 focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none cursor-pointer">
+<option>Last 6 Months</option>
+<option>Last 30 Days</option>
+<option>This Year</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[20px] text-on-surface-variant">arrow_drop_down</span>
+</div>
+</div>
+<div class="h-[300px] w-full relative">
+<canvas id="activityChart"></canvas>
+</div>
+</div>
+<!-- Bottom Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-md">
+<!-- Ticket Status Donut -->
+<div class="bg-surface-container-lowest rounded-xl p-md thin-border card-shadow flex flex-col">
+<h2 class="font-title-lg text-title-lg text-on-surface mb-4 pb-4 border-b border-outline-variant/30">Ticket Status</h2>
+<div class="flex-1 flex items-center justify-center relative min-h-[200px]">
+<canvas id="statusChart"></canvas>
+<!-- Center text -->
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+<span class="font-display-lg text-display-lg text-on-surface leading-none">90</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Total Active</span>
+</div>
+</div>
+<div class="mt-4 grid grid-cols-2 gap-y-2 gap-x-4">
+<div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#3F79A9]"></span><span class="font-label-md text-label-md text-on-surface-variant">New (24)</span></div>
+<div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#7d5400]"></span><span class="font-label-md text-label-md text-on-surface-variant">Review (14)</span></div>
+<div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#006c4d]"></span><span class="font-label-md text-label-md text-on-surface-variant">Dev (12)</span></div>
+<div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#c1c7d0]"></span><span class="font-label-md text-label-md text-on-surface-variant">Waiting (8)</span></div>
+</div>
+</div>
+<!-- Tickets by Priority Bar -->
+<div class="bg-surface-container-lowest rounded-xl p-md thin-border card-shadow flex flex-col">
+<h2 class="font-title-lg text-title-lg text-on-surface mb-4 pb-4 border-b border-outline-variant/30">Tickets by Priority</h2>
+<div class="flex-1 flex items-end gap-2 sm:gap-4 mt-2 min-h-[200px]">
+<!-- Bar 1 -->
+<div class="flex-1 flex flex-col items-center justify-end h-full group">
+<span class="font-label-sm text-label-sm text-on-surface-variant mb-2 opacity-0 group-hover:opacity-100 transition-opacity">15</span>
+<div class="w-full bg-[#ba1a1a] rounded-t-sm transition-all" style="height: 25%"></div>
+<span class="font-label-sm text-label-sm text-on-surface mt-2 truncate w-full text-center">Critical</span>
+</div>
+<!-- Bar 2 -->
+<div class="flex-1 flex flex-col items-center justify-end h-full group">
+<span class="font-label-sm text-label-sm text-on-surface-variant mb-2 opacity-0 group-hover:opacity-100 transition-opacity">32</span>
+<div class="w-full bg-[#3F79A9] rounded-t-sm transition-all" style="height: 55%"></div>
+<span class="font-label-sm text-label-sm text-on-surface mt-2 truncate w-full text-center">High</span>
+</div>
+<!-- Bar 3 -->
+<div class="flex-1 flex flex-col items-center justify-end h-full group">
+<span class="font-label-sm text-label-sm text-on-surface-variant mb-2 opacity-0 group-hover:opacity-100 transition-opacity">45</span>
+<div class="w-full bg-[#96ccff] rounded-t-sm transition-all" style="height: 80%"></div>
+<span class="font-label-sm text-label-sm text-on-surface mt-2 truncate w-full text-center">Medium</span>
+</div>
+<!-- Bar 4 -->
+<div class="flex-1 flex flex-col items-center justify-end h-full group">
+<span class="font-label-sm text-label-sm text-on-surface-variant mb-2 opacity-0 group-hover:opacity-100 transition-opacity">18</span>
+<div class="w-full bg-[#e2e9f3] rounded-t-sm transition-all" style="height: 30%"></div>
+<span class="font-label-sm text-label-sm text-on-surface mt-2 truncate w-full text-center">Low</span>
+</div>
+</div>
+</div>
+<!-- Recent Activity List -->
+<div class="bg-surface-container-lowest rounded-xl p-md thin-border card-shadow flex flex-col">
+<div class="flex justify-between items-center mb-4 pb-4 border-b border-outline-variant/30">
+<h2 class="font-title-lg text-title-lg text-on-surface">Recent Activity</h2>
+<button class="text-primary font-label-md text-label-md hover:underline">View All</button>
+</div>
+<div class="flex-1 overflow-y-auto space-y-4 pr-2">
+<!-- Item 1 -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container/50 flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface">Client approved estimate for <a class="text-primary hover:underline font-medium" href="#">TK-1042</a></p>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">10 mins ago</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-primary-container">add</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface">New ticket created by <span class="font-medium">Acme Corp</span></p>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">45 mins ago</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed/40 flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">person_add</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface"><span class="font-medium">Rahul</span> was assigned to <a class="text-primary hover:underline font-medium" href="#">TK-1041</a></p>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">2 hours ago</p>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">image</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface">Client uploaded a screenshot to <a class="text-primary hover:underline font-medium" href="#">TK-1039</a></p>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">3 hours ago</p>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-inverse-primary/30 flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-primary">bug_report</span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface"><a class="text-primary hover:underline font-medium" href="#">TK-1038</a> moved to QA</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">4 hours ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Overlay for mobile sidebar -->
+<div class="fixed inset-0 bg-on-surface/50 z-10 hidden md:hidden" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<script>
+        // Sidebar Toggle Logic
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        let isSidebarOpen = false;
+
+        function toggleSidebar() {
+            isSidebarOpen = !isSidebarOpen;
+            if (isSidebarOpen) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Chart.js Implementations
+        document.addEventListener("DOMContentLoaded", function() {
+            // Colors from Tailwind config
+            const primaryColor = '#3f79a9';
+            const secondaryColor = '#006c4d';
+            const gridColor = '#e2e9f3';
+            const textColor = '#41474f';
+
+            // Activity Line Chart
+            const ctxActivity = document.getElementById('activityChart').getContext('2d');
+            new Chart(ctxActivity, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [
+                        {
+                            label: 'New Tickets',
+                            data: [65, 59, 80, 81, 56, 55],
+                            borderColor: primaryColor,
+                            backgroundColor: primaryColor,
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Resolved',
+                            data: [45, 48, 60, 75, 62, 70],
+                            borderColor: secondaryColor,
+                            backgroundColor: secondaryColor,
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 6,
+                                font: { family: 'Inter', size: 13 }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#151c24',
+                            titleFont: { family: 'Inter', size: 13 },
+                            bodyFont: { family: 'Inter', size: 14 },
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: 'Inter', size: 11 }, color: textColor }
+                        },
+                        y: {
+                            grid: { color: gridColor, drawBorder: false },
+                            ticks: { font: { family: 'Inter', size: 11 }, color: textColor, maxTicksLimit: 6 }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+
+            // Status Donut Chart
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['New', 'Review', 'Dev', 'Waiting'],
+                    datasets: [{
+                        data: [24, 14, 12, 8],
+                        backgroundColor: [
+                            '#3F79A9', // Primary Blue
+                            '#7d5400', // Tertiary (Warm)
+                            '#006c4d', // Secondary (Green)
+                            '#c1c7d0'  // Neutral Outline Variant
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#151c24',
+                            bodyFont: { family: 'Inter', size: 14 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            displayColors: false
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body></html>

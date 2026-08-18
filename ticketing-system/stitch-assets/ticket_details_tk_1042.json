@@ -1,0 +1,292 @@
+{
+  "screenshot": {
+    "name": "projects/15338928031291607109/files/12630464030248186167",
+    "downloadUrl": "https://lh3.googleusercontent.com/aida/AP1WRLtMikGPgrsYe7NGMFexeSeSpDfcnCbZbutZCf33VyIT0aqLjR5-s79lUgIf9tp76lu4gjFIdeS8xzqzbIQRRBK1scaZ3a6Ci1lmASt3zdDadhkHiGkjuRW4v4qhHH3VZRIu0WxhYcRGaLsgSamtSYKncOn2HLmm-Zyt7_LwQjnsLzVeoPo4289hniXpdHtRcWwN2b6WmA5tgTC5jN_nsXS_ilEw7_ocvmUSruU_hY8Xh93BZwwG_U2IjD3G"
+  },
+  "htmlCode": {
+    "name": "projects/15338928031291607109/files/13361838042615413981",
+    "downloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1OTRjMmVjM2M2MTEwOTEwN2M1Y2I2MTVlMDFjEgsSBxCmrIyC7QoYAZIBJAoKcHJvamVjdF9pZBIWQhQxNTMzODkyODAzMTI5MTYwNzEwOQ&filename=&opi=89354086",
+    "mimeType": "text/html"
+  },
+  "id": "96d9351c30df4074833428fded6355f1",
+  "generatedBy": "figaro_agent",
+  "width": "2560",
+  "height": "2746",
+  "title": "Ticket Details - TK-1042",
+  "prompt": "Design the \"Ticket Details\" page for TK-1042 \"Invoice PDF is not downloading\". \n\nPage Structure:\n- Standard Nexus header (Logo, Support Center, Client Name, Avatar).\n- \"Back to My Tickets\" navigation.\n- Ticket Header: TK-1042 title, metadata (Bug, Sales Dashboard, Production), and Status Badge (\"In Development\").\n- Ticket Progress: Horizontal 8-step lifecycle (Issue Raised to Resolved).\n- Layout: Two-column desktop layout.\n\nMain Column (Left):\n- Issue Summary Card: Detailed title and description.\n- AI Summary: Labeled \"AI-generated\" with bulleted \"What we understand\" and \"Possible cause\".\n- Conversation Thread: Clean, message-based interface with distinct styles for Client (John Mathew) and Support Team.\n- Message Composer: Sticky or bottom-anchored with attachment and send buttons.\n\nSidebar (Right):\n- Action Required Section: \"An estimate is ready for your review\" with \"Review Estimate\" button.\n- Development Estimate Card: Effort (24h), Delivery (3-4 days), Status \"Awaiting Your Approval\".\n- Ticket Metadata: Created By, Environment, Priority (High).\n- Attachments: Preview cards for invoice-error.png, etc.\n- Ticket Timeline: Summarized events (Ticket created, Estimate prepared, etc.).\n\nVisual Style: \n- Use the warm neutral background (#F3F4EE or surface color).\n- Nexus charcoal-blue accents and primary buttons.\n- Standard typography (Inter), rounded corners, and subtle shadows from the design system.\n- No sidebar navigation (as per previous request).\n- Client-facing info only (no internal developer notes).",
+  "name": "projects/15338928031291607109/screens/96d9351c30df4074833428fded6355f1",
+  "theme": {
+    "colorMode": "LIGHT",
+    "font": "INTER",
+    "roundness": "ROUND_EIGHT",
+    "customColor": "#3f79a9",
+    "headlineFont": "INTER",
+    "bodyFont": "INTER",
+    "labelFont": "INTER",
+    "namedColors": {
+      "on_secondary": "#ffffff",
+      "error": "#ba1a1a",
+      "on_secondary_container": "#007151",
+      "surface_tint": "#246291",
+      "primary_fixed": "#cee5ff",
+      "on_primary_container": "#fdfcff",
+      "surface_container": "#e8eef9",
+      "primary_fixed_dim": "#96ccff",
+      "tertiary_container": "#9a6c1b",
+      "on_primary_fixed_variant": "#004a75",
+      "surface_container_lowest": "#ffffff",
+      "on_primary": "#ffffff",
+      "on_surface_variant": "#41474f",
+      "inverse_on_surface": "#ebf1fc",
+      "secondary_fixed": "#95f5cb",
+      "inverse_surface": "#2a3139",
+      "on_background": "#151c24",
+      "on_tertiary_fixed": "#281800",
+      "on_error_container": "#93000a",
+      "outline": "#717880",
+      "primary_container": "#3f79a9",
+      "secondary_container": "#93f3c8",
+      "inverse_primary": "#96ccff",
+      "on_primary_fixed": "#001d32",
+      "surface_bright": "#f7f9ff",
+      "on_tertiary_container": "#fffcff",
+      "background": "#f7f9ff",
+      "tertiary": "#7d5400",
+      "on_error": "#ffffff",
+      "secondary_fixed_dim": "#79d9b0",
+      "tertiary_fixed_dim": "#f6bd65",
+      "on_tertiary_fixed_variant": "#614000",
+      "tertiary_fixed": "#ffddb0",
+      "surface_variant": "#dce3ee",
+      "surface": "#f7f9ff",
+      "secondary": "#006c4d",
+      "surface_container_low": "#edf4ff",
+      "on_tertiary": "#ffffff",
+      "on_surface": "#151c24",
+      "surface_container_highest": "#dce3ee",
+      "primary": "#20608f",
+      "surface_container_high": "#e2e9f3",
+      "surface_dim": "#d4dae5",
+      "on_secondary_fixed_variant": "#005139",
+      "outline_variant": "#c1c7d0",
+      "on_secondary_fixed": "#002115",
+      "error_container": "#ffdad6"
+    },
+    "colorVariant": "FIDELITY",
+    "overridePrimaryColor": "#3f79a9",
+    "overrideSecondaryColor": "#4faf89",
+    "overrideNeutralColor": "#2a3139",
+    "spacingScale": 2,
+    "typography": {
+      "body-sm": {
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "lineHeight": "20px"
+      },
+      "label-md": {
+        "fontFamily": "Inter",
+        "fontSize": "13px",
+        "fontWeight": "500",
+        "lineHeight": "16px",
+        "letterSpacing": "0.01em"
+      },
+      "title-lg": {
+        "fontFamily": "Inter",
+        "fontSize": "18px",
+        "fontWeight": "500",
+        "lineHeight": "24px"
+      },
+      "display-lg": {
+        "fontFamily": "Inter",
+        "fontSize": "32px",
+        "fontWeight": "600",
+        "lineHeight": "40px",
+        "letterSpacing": "-0.02em"
+      },
+      "body-md": {
+        "fontFamily": "Inter",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "lineHeight": "24px"
+      },
+      "headline-sm": {
+        "fontFamily": "Inter",
+        "fontSize": "20px",
+        "fontWeight": "600",
+        "lineHeight": "28px"
+      },
+      "headline-md": {
+        "fontFamily": "Inter",
+        "fontSize": "24px",
+        "fontWeight": "600",
+        "lineHeight": "32px",
+        "letterSpacing": "-0.01em"
+      },
+      "label-sm": {
+        "fontFamily": "Inter",
+        "fontSize": "11px",
+        "fontWeight": "600",
+        "lineHeight": "16px"
+      }
+    },
+    "spacing": {
+      "gutter": "20px",
+      "md": "16px",
+      "base": "4px",
+      "lg": "24px",
+      "sidebar_width": "260px",
+      "sm": "8px",
+      "xs": "4px",
+      "xl": "32px"
+    },
+    "headlineFontFamily": "Inter",
+    "bodyFontFamily": "Inter",
+    "labelFontFamily": "Inter"
+  },
+  "deviceType": "DESKTOP",
+  "screenType": "DESIGN",
+  "screenMetadata": {
+    "agentType": "PRO_AGENT",
+    "status": "COMPLETE",
+    "displayMode": "HTML"
+  },
+  "designSystem": {
+    "name": "assets/50d3331a8ad24d19845d5ed9e7f1a1df",
+    "designSystem": {
+      "displayName": "Nexus Service Desk",
+      "styleGuidelines": "## Brand & Style\n\nThe design system is engineered for the high-throughput environment of enterprise ticket management. It prioritizes a **Corporate Modern** aesthetic that balances the authority of a legacy service desk with the streamlined efficiency of contemporary SaaS. \n\nThe visual narrative centers on clarity and \"low cognitive load.\" By utilizing a warm off-white canvas and a structured charcoal-blue sidebar, the interface creates a clear mental model of navigation versus workspace. The emotional response is one of calm control; even when ticket volumes are high, the UI remains grounded and orderly through the use of intentional whitespace and a restrained color application. There are no decorative gradients or unnecessary motion—every element serves a functional purpose in the resolution of client issues.\n\n## Layout & Spacing\n\nThe layout follows a **structured grid model** with a fixed-width sidebar and a fluid content area.\n\n- **Sidebar:** 260px fixed width. Contains the primary navigation.\n- **Main Canvas:** Uses a max-width container of 1440px for dashboard views to prevent line lengths from becoming unreadable on ultra-wide monitors.\n- **Grid:** A 12-column grid system is used for dashboard widgets.\n- **Rhythm:** An 8px base unit drives all padding and margins. Use 24px (lg) for major section spacing and 16px (md) for internal card padding.\n- **Mobile:** On screens smaller than 768px, the sidebar collapses into a hamburger menu and the main canvas padding reduces from 24px to 16px.\n\n## Elevation & Depth\n\nDepth is conveyed through **Low-Contrast Outlines** and subtle tonal shifts rather than heavy shadows.\n\n- **The Main Surface:** Uses the off-white background (#F3F4EE) as the base.\n- **Cards:** Pure white (#FFFFFF) surfaces with a 1px solid border (#D9DDE0).\n- **Shadows:** Only used on \"floating\" elements like dropdowns or modals. Use a single, soft shadow: `0 4px 12px rgba(0, 0, 0, 0.05)`.\n- **Active States:** In the sidebar, the active menu item uses a slightly lighter charcoal (#3B4652) to indicate depth and selection without needing a border or shadow.\n\n## Components\n\n- **Buttons:** Primary buttons use #3F79A9 with white text. Secondary buttons use a white background with a #D9DDE0 border and #1C1C1C text. Use a subtle hover state (background darken 5%).\n- **Status Chips:** Small, uppercase labels using the semantic palette. Use a 10% opacity background of the status color with a 100% opacity text color for a modern \"tinted\" look.\n- **Input Fields:** White background, 1px border (#D9DDE0). On focus, the border shifts to Primary Blue (#3F79A9) with a 2px soft outer glow of the same color.\n- **Data Tables:** Row-based with 1px bottom borders. No vertical grid lines. Header text uses `label-sm` in Secondary Text color.\n- **Sidebar Nav:** Icons should be 20x20px. Active states feature a 3px vertical \"accent bar\" on the far left in Primary Blue.\n- **Cards:** All dashboard widgets must sit inside a white card. Headers inside cards should use `title-lg` with 16px bottom padding.",
+      "theme": {
+        "colorMode": "LIGHT",
+        "font": "INTER",
+        "roundness": "ROUND_EIGHT",
+        "customColor": "#3f79a9",
+        "headlineFont": "INTER",
+        "bodyFont": "INTER",
+        "labelFont": "INTER",
+        "namedColors": {
+          "tertiary_fixed": "#ffddb0",
+          "error": "#ba1a1a",
+          "surface_container_high": "#e2e9f3",
+          "background": "#f7f9ff",
+          "secondary_fixed_dim": "#79d9b0",
+          "on_tertiary_fixed_variant": "#614000",
+          "tertiary_fixed_dim": "#f6bd65",
+          "on_tertiary_container": "#fffcff",
+          "on_primary_container": "#fdfcff",
+          "surface_bright": "#f7f9ff",
+          "surface_container_lowest": "#ffffff",
+          "on_surface": "#151c24",
+          "on_primary_fixed_variant": "#004a75",
+          "secondary": "#006c4d",
+          "outline": "#717880",
+          "surface_container_highest": "#dce3ee",
+          "surface_container_low": "#edf4ff",
+          "inverse_surface": "#2a3139",
+          "secondary_fixed": "#95f5cb",
+          "on_secondary_fixed": "#002115",
+          "inverse_primary": "#96ccff",
+          "primary_fixed": "#cee5ff",
+          "primary_fixed_dim": "#96ccff",
+          "surface_container": "#e8eef9",
+          "on_secondary_fixed_variant": "#005139",
+          "tertiary": "#7d5400",
+          "on_error": "#ffffff",
+          "tertiary_container": "#9a6c1b",
+          "surface_variant": "#dce3ee",
+          "surface_dim": "#d4dae5",
+          "primary_container": "#3f79a9",
+          "primary": "#20608f",
+          "on_primary": "#ffffff",
+          "on_tertiary_fixed": "#281800",
+          "on_surface_variant": "#41474f",
+          "inverse_on_surface": "#ebf1fc",
+          "surface": "#f7f9ff",
+          "on_secondary_container": "#007151",
+          "on_background": "#151c24",
+          "secondary_container": "#93f3c8",
+          "on_primary_fixed": "#001d32",
+          "on_secondary": "#ffffff",
+          "on_error_container": "#93000a",
+          "outline_variant": "#c1c7d0",
+          "error_container": "#ffdad6",
+          "surface_tint": "#246291",
+          "on_tertiary": "#ffffff"
+        },
+        "designMd": "---\nname: Nexus Service Desk\ncolors:\n  surface: '#f7f9ff'\n  surface-dim: '#d4dae5'\n  surface-bright: '#f7f9ff'\n  surface-container-lowest: '#ffffff'\n  surface-container-low: '#edf4ff'\n  surface-container: '#e8eef9'\n  surface-container-high: '#e2e9f3'\n  surface-container-highest: '#dce3ee'\n  on-surface: '#151c24'\n  on-surface-variant: '#41474f'\n  inverse-surface: '#2a3139'\n  inverse-on-surface: '#ebf1fc'\n  outline: '#717880'\n  outline-variant: '#c1c7d0'\n  surface-tint: '#246291'\n  primary: '#20608f'\n  on-primary: '#ffffff'\n  primary-container: '#3f79a9'\n  on-primary-container: '#fdfcff'\n  inverse-primary: '#96ccff'\n  secondary: '#006c4d'\n  on-secondary: '#ffffff'\n  secondary-container: '#93f3c8'\n  on-secondary-container: '#007151'\n  tertiary: '#7d5400'\n  on-tertiary: '#ffffff'\n  tertiary-container: '#9a6c1b'\n  on-tertiary-container: '#fffcff'\n  error: '#ba1a1a'\n  on-error: '#ffffff'\n  error-container: '#ffdad6'\n  on-error-container: '#93000a'\n  primary-fixed: '#cee5ff'\n  primary-fixed-dim: '#96ccff'\n  on-primary-fixed: '#001d32'\n  on-primary-fixed-variant: '#004a75'\n  secondary-fixed: '#95f5cb'\n  secondary-fixed-dim: '#79d9b0'\n  on-secondary-fixed: '#002115'\n  on-secondary-fixed-variant: '#005139'\n  tertiary-fixed: '#ffddb0'\n  tertiary-fixed-dim: '#f6bd65'\n  on-tertiary-fixed: '#281800'\n  on-tertiary-fixed-variant: '#614000'\n  background: '#f7f9ff'\n  on-background: '#151c24'\n  surface-variant: '#dce3ee'\ntypography:\n  display-lg:\n    fontFamily: Inter\n    fontSize: 32px\n    fontWeight: '600'\n    lineHeight: 40px\n    letterSpacing: -0.02em\n  headline-md:\n    fontFamily: Inter\n    fontSize: 24px\n    fontWeight: '600'\n    lineHeight: 32px\n    letterSpacing: -0.01em\n  headline-sm:\n    fontFamily: Inter\n    fontSize: 20px\n    fontWeight: '600'\n    lineHeight: 28px\n  title-lg:\n    fontFamily: Inter\n    fontSize: 18px\n    fontWeight: '500'\n    lineHeight: 24px\n  body-md:\n    fontFamily: Inter\n    fontSize: 16px\n    fontWeight: '400'\n    lineHeight: 24px\n  body-sm:\n    fontFamily: Inter\n    fontSize: 14px\n    fontWeight: '400'\n    lineHeight: 20px\n  label-md:\n    fontFamily: Inter\n    fontSize: 13px\n    fontWeight: '500'\n    lineHeight: 16px\n    letterSpacing: 0.01em\n  label-sm:\n    fontFamily: Inter\n    fontSize: 11px\n    fontWeight: '600'\n    lineHeight: 16px\nrounded:\n  sm: 0.25rem\n  DEFAULT: 0.5rem\n  md: 0.75rem\n  lg: 1rem\n  xl: 1.5rem\n  full: 9999px\nspacing:\n  base: 4px\n  xs: 4px\n  sm: 8px\n  md: 16px\n  lg: 24px\n  xl: 32px\n  gutter: 20px\n  sidebar_width: 260px\n---\n\n## Brand & Style\n\nThe design system is engineered for the high-throughput environment of enterprise ticket management. It prioritizes a **Corporate Modern** aesthetic that balances the authority of a legacy service desk with the streamlined efficiency of contemporary SaaS. \n\nThe visual narrative centers on clarity and \"low cognitive load.\" By utilizing a warm off-white canvas and a structured charcoal-blue sidebar, the interface creates a clear mental model of navigation versus workspace. The emotional response is one of calm control; even when ticket volumes are high, the UI remains grounded and orderly through the use of intentional whitespace and a restrained color application. There are no decorative gradients or unnecessary motion—every element serves a functional purpose in the resolution of client issues.\n\n## Colors\n\nThe palette is governed by an **80/15/5 ratio**. 80% of the interface consists of neutrals (Warm Off-White, Charcoal, and Grey) to provide a stable foundation. 15% is dedicated to Primary Blue for core actions and active navigation. The final 5% is reserved for Semantic Green and status indicators to highlight critical information.\n\n- **Primary Blue (#3F79A9):** Used for primary call-to-actions, active toggle states, and primary data series in analytics.\n- **Secondary Green (#4FAF89):** Reserved for \"Success\" feedback and positive performance metrics.\n- **Sidebar Neutrals:** The sidebar uses a deep charcoal-blue (#2A3139) to anchor the left side of the screen, providing high contrast against the light workspace.\n- **Semantic Palette:** Status colors are distinct but shares a similar saturation level to ensure visual harmony when displayed in lists or boards.\n\n## Typography\n\nThis design system utilizes **Inter** exclusively to ensure maximum legibility and a systematic, utilitarian feel. \n\n- **Primary Text (#1C1C1C):** Used for headlines and body text on the main background to ensure high readability.\n- **Secondary Text (#5F666D):** Used for descriptions, timestamps, and metadata to create visual hierarchy.\n- **Contrast:** On the charcoal sidebar, text should shift to #FFFFFF (Primary) and #A1A7AB (Secondary).\n- **Scale:** Large display sizes are reserved for dashboard overviews. For ticket details and data tables, prioritize `body-sm` and `label-md` to maximize information density without clutter.\n\n## Layout & Spacing\n\nThe layout follows a **structured grid model** with a fixed-width sidebar and a fluid content area.\n\n- **Sidebar:** 260px fixed width. Contains the primary navigation.\n- **Main Canvas:** Uses a max-width container of 1440px for dashboard views to prevent line lengths from becoming unreadable on ultra-wide monitors.\n- **Grid:** A 12-column grid system is used for dashboard widgets.\n- **Rhythm:** An 8px base unit drives all padding and margins. Use 24px (lg) for major section spacing and 16px (md) for internal card padding.\n- **Mobile:** On screens smaller than 768px, the sidebar collapses into a hamburger menu and the main canvas padding reduces from 24px to 16px.\n\n## Elevation & Depth\n\nDepth is conveyed through **Low-Contrast Outlines** and subtle tonal shifts rather than heavy shadows.\n\n- **The Main Surface:** Uses the off-white background (#F3F4EE) as the base.\n- **Cards:** Pure white (#FFFFFF) surfaces with a 1px solid border (#D9DDE0).\n- **Shadows:** Only used on \"floating\" elements like dropdowns or modals. Use a single, soft shadow: `0 4px 12px rgba(0, 0, 0, 0.05)`.\n- **Active States:** In the sidebar, the active menu item uses a slightly lighter charcoal (#3B4652) to indicate depth and selection without needing a border or shadow.\n\n## Shapes\n\nThe shape language is **Rounded**, reflecting a modern and accessible professional environment.\n\n- **Cards & Containers:** 10px or 12px corner radius is the standard for all primary containers.\n- **Buttons:** Match the card radius (10px) to maintain consistency.\n- **Inputs:** 8px radius for form fields to provide a slightly crisper look than the cards they inhabit.\n- **Status Pills:** Use a fully rounded (pill-shaped) radius to distinguish them from interactive buttons.\n\n## Components\n\n- **Buttons:** Primary buttons use #3F79A9 with white text. Secondary buttons use a white background with a #D9DDE0 border and #1C1C1C text. Use a subtle hover state (background darken 5%).\n- **Status Chips:** Small, uppercase labels using the semantic palette. Use a 10% opacity background of the status color with a 100% opacity text color for a modern \"tinted\" look.\n- **Input Fields:** White background, 1px border (#D9DDE0). On focus, the border shifts to Primary Blue (#3F79A9) with a 2px soft outer glow of the same color.\n- **Data Tables:** Row-based with 1px bottom borders. No vertical grid lines. Header text uses `label-sm` in Secondary Text color.\n- **Sidebar Nav:** Icons should be 20x20px. Active states feature a 3px vertical \"accent bar\" on the far left in Primary Blue.\n- **Cards:** All dashboard widgets must sit inside a white card. Headers inside cards should use `title-lg` with 16px bottom padding.",
+        "colorVariant": "FIDELITY",
+        "overridePrimaryColor": "#3f79a9",
+        "overrideSecondaryColor": "#4faf89",
+        "overrideNeutralColor": "#2a3139",
+        "spacingScale": 2,
+        "typography": {
+          "label-sm": {
+            "fontFamily": "Inter",
+            "fontSize": "11px",
+            "fontWeight": "600",
+            "lineHeight": "16px"
+          },
+          "body-md": {
+            "fontFamily": "Inter",
+            "fontSize": "16px",
+            "fontWeight": "400",
+            "lineHeight": "24px"
+          },
+          "headline-md": {
+            "fontFamily": "Inter",
+            "fontSize": "24px",
+            "fontWeight": "600",
+            "lineHeight": "32px",
+            "letterSpacing": "-0.01em"
+          },
+          "headline-sm": {
+            "fontFamily": "Inter",
+            "fontSize": "20px",
+            "fontWeight": "600",
+            "lineHeight": "28px"
+          },
+          "title-lg": {
+            "fontFamily": "Inter",
+            "fontSize": "18px",
+            "fontWeight": "500",
+            "lineHeight": "24px"
+          },
+          "body-sm": {
+            "fontFamily": "Inter",
+            "fontSize": "14px",
+            "fontWeight": "400",
+            "lineHeight": "20px"
+          },
+          "display-lg": {
+            "fontFamily": "Inter",
+            "fontSize": "32px",
+            "fontWeight": "600",
+            "lineHeight": "40px",
+            "letterSpacing": "-0.02em"
+          },
+          "label-md": {
+            "fontFamily": "Inter",
+            "fontSize": "13px",
+            "fontWeight": "500",
+            "lineHeight": "16px",
+            "letterSpacing": "0.01em"
+          }
+        },
+        "spacing": {
+          "xl": "32px",
+          "xs": "4px",
+          "gutter": "20px",
+          "sidebar_width": "260px",
+          "base": "4px",
+          "lg": "24px",
+          "sm": "8px",
+          "md": "16px"
+        },
+        "headlineFontFamily": "Inter",
+        "bodyFontFamily": "Inter",
+        "labelFontFamily": "Inter"
+      }
+    },
+    "version": "1"
+  }
+}
