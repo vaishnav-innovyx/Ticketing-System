@@ -2,7 +2,13 @@
 	import Sidebar from './Sidebar.svelte';
 	import Header from './Header.svelte';
 
-	let { children }: { children: import('svelte').Snippet } = $props();
+	let {
+		profile,
+		children
+	}: {
+		profile?: { id: string; full_name: string | null; email: string; role: string } | null;
+		children: import('svelte').Snippet;
+	} = $props();
 
 	let mobileMenuOpen = $state(false);
 </script>
@@ -10,7 +16,7 @@
 <div class="flex min-h-screen bg-[var(--color-surface)]">
 	<!-- Desktop Persistent Sidebar -->
 	<div class="hidden md:fixed md:inset-y-0 md:left-0 md:z-40 md:flex md:w-[260px]">
-		<Sidebar />
+		<Sidebar {profile} />
 	</div>
 
 	<!-- Mobile Sidebar Backdrop Overlay -->
@@ -29,12 +35,12 @@
 			? 'translate-x-0'
 			: '-translate-x-full'}"
 	>
-		<Sidebar onClose={() => (mobileMenuOpen = false)} />
+		<Sidebar {profile} onClose={() => (mobileMenuOpen = false)} />
 	</div>
 
 	<!-- Main Content Area -->
 	<div class="flex flex-1 flex-col md:pl-[260px]">
-		<Header onMenuClick={() => (mobileMenuOpen = true)} />
+		<Header {profile} onMenuClick={() => (mobileMenuOpen = true)} />
 
 		<main class="flex-1 p-4 sm:p-6 md:p-8">
 			<div class="mx-auto w-full max-w-[1440px]">

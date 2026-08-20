@@ -1,6 +1,39 @@
 <script lang="ts">
-	let { onMenuClick }: { onMenuClick?: () => void } = $props();
+	import { roleLabel } from '$lib/portal/ticketDisplay';
+
+	let {
+		profile,
+		onMenuClick
+	}: {
+		profile?: { id: string; full_name: string | null; email: string; role: string } | null;
+		onMenuClick?: () => void;
+	} = $props();
+
+	let userMenuOpen = $state(false);
+
+	const displayName = $derived(profile?.full_name || profile?.email?.split('@')[0] || 'Super Admin');
+	const displayRole = $derived(profile?.role ? roleLabel(profile.role) : 'Super Admin');
+	const initials = $derived(
+		(profile?.full_name || profile?.email || 'SA')
+			.split(' ')
+			.map((part) => part[0])
+			.join('')
+			.slice(0, 2)
+			.toUpperCase()
+	);
 </script>
+
+<svelte:window
+	onclick={(e) => {
+		const target = e.target as HTMLElement;
+		if (!target.closest('#user-profile-menu-container')) {
+			userMenuOpen = false;
+		}
+	}}
+	onkeydown={(e) => {
+		if (e.key === 'Escape') userMenuOpen = false;
+	}}
+/>
 
 <header
 	class="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-[var(--color-outline-variant)]/60 bg-[var(--color-surface)] px-4 sm:px-6 md:px-8"
@@ -58,26 +91,93 @@
 
 		<div class="hidden h-7 w-px bg-[var(--color-outline-variant)]/60 sm:block"></div>
 
-		<!-- User profile -->
-		<div class="flex cursor-pointer items-center gap-2.5 rounded-lg p-1.5 transition-colors hover:bg-[var(--color-surface-container-low)]">
-			<div
-				class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary-container)] text-label-md font-semibold text-white shadow-sm"
+		<!-- User profile dropdown container -->
+		<div id="user-profile-menu-container" class="relative">
+			<button
+				type="button"
+				class="flex cursor-pointer items-center gap-2.5 rounded-lg p-1.5 transition-colors hover:bg-[var(--color-surface-container-low)]"
+				onclick={() => (userMenuOpen = !userMenuOpen)}
+				aria-expanded={userMenuOpen}
+				aria-haspopup="true"
 			>
-				AL
-			</div>
-
-			<div class="hidden text-left lg:block">
-				<div class="text-label-md font-medium text-[var(--color-on-surface)]">
-					Alex Morgan
+				<div
+					class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-primary-container)] text-label-md font-semibold text-white shadow-sm"
+				>
+					{initials}
 				</div>
-				<div class="text-label-sm text-[var(--color-on-surface-variant)]">
-					Support Lead
-				</div>
-			</div>
 
-			<span class="material-symbols-outlined text-[18px] text-[var(--color-on-surface-variant)]">
-				arrow_drop_down
-			</span>
+				<div class="hidden text-left lg:block">
+					<div class="text-label-md font-medium text-[var(--color-on-surface)]">
+						{displayName}
+					</div>
+					<div class="text-label-sm text-[var(--color-on-surface-variant)]">
+						{displayRole}
+					</div>
+				</div>
+
+				<span class="material-symbols-outlined text-[18px] text-[var(--color-on-surface-variant)] transition-transform duration-200 {userMenuOpen ? 'rotate-180' : ''}">
+					arrow_drop_down
+				</span>
+			</button>
+
+			<!-- Profile & Logout Dropdown Menu -->
+			{#if userMenuOpen}
+				<div
+					class="absolute right-0 mt-2 w-64 origin-top-right rounded-xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] p-2 shadow-lg shadow-black/10 transition-all z-50 animate-in fade-in zoom-in-95 duration-100"
+				>
+					<div class="border-b border-[var(--color-outline-variant)]/40 px-3 py-2.5">
+						<p class="text-label-md font-semibold text-[var(--color-on-surface)] truncate">{displayName}</p>
+						<p class="text-body-xs text-[var(--color-on-surface-variant)] truncate">{profile?.email || 'admin@companyx.com'}</p>
+						<span class="mt-1 inline-block rounded bg-[var(--color-primary-fixed)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-on-primary-fixed)] uppercase">
+							{displayRole}
+						</span>
+					</div>
+
+					<div class="py-1">
+						<a
+							href="/portal"
+							class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-[var(--color-on-surface)] transition-colors hover:bg-[var(--color-surface-container-low)]"
+							onclick={() => (userMenuOpen = false)}
+						>
+							<span class="material-symbols-outlined text-[18px] text-[var(--color-on-surface-variant)]">open_in_new</span>
+							<span>Client Portal View</span>
+						</a>
+
+						<a
+							href="/settings"
+							class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-[var(--color-on-surface)] transition-colors hover:bg-[var(--color-surface-container-low)]"
+							onclick={() => (userMenuOpen = false)}
+						>
+							<span class="material-symbols-outlined text-[18px] text-[var(--color-on-surface-variant)]">settings</span>
+							<span>Settings</span>
+						</a>
+					</div>
+
+					<div class="border-t border-[var(--color-outline-variant)]/40 pt-1">
+						<form method="POST" action="/logout">
+							<button
+								type="submit"
+								class="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm font-medium text-[var(--color-error)] transition-colors hover:bg-[var(--color-error-container)]/30"
+							>
+								<span class="material-symbols-outlined text-[18px]">logout</span>
+								<span>Sign out</span>
+							</button>
+						</form>
+					</div>
+				</div>
+			{/if}
 		</div>
+
+		<!-- Direct quick logout icon button -->
+		<form method="POST" action="/logout" class="hidden sm:block">
+			<button
+				type="submit"
+				class="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-on-surface-variant)] transition-colors hover:bg-[var(--color-surface-container)] hover:text-[var(--color-error)] cursor-pointer"
+				title="Sign out"
+				aria-label="Sign out"
+			>
+				<span class="material-symbols-outlined text-[20px]">logout</span>
+			</button>
+		</form>
 	</div>
 </header>

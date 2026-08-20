@@ -1,7 +1,16 @@
 <script lang="ts">
-	import { getPortalTickets } from '$lib/data/portalTickets';
+	import { STATUS_LABEL, formatRelative } from '$lib/portal/ticketDisplay';
+	import type { PageData } from './$types';
 
-	const tickets = getPortalTickets().slice(0, 4);
+	let { data }: { data: PageData } = $props();
+	const tickets = $derived(
+		data.tickets.map((t) => ({
+			id: t.token ?? t.id,
+			title: t.title,
+			status: STATUS_LABEL[t.status],
+			lastUpdated: formatRelative(t.updated_at)
+		}))
+	);
 
 	function getStatusBadgeClass(status: string) {
 		switch (status) {

@@ -1,9 +1,11 @@
 <script lang="ts">
 	import AppShell from '$lib/components/layout/AppShell.svelte';
+	import type { LayoutData } from './$types';
 
-	let { children } = $props();
+	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 </script>
 
-<AppShell>
+<AppShell profile={data.profile}>
 	{@render children()}
 </AppShell>
+

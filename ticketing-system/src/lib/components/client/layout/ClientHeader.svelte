@@ -1,7 +1,24 @@
 <script lang="ts">
 	import { page } from '$app/state';
 
-	let { onMenuClick }: { onMenuClick?: () => void } = $props();
+	let {
+		onMenuClick,
+		profile
+	}: {
+		onMenuClick?: () => void;
+		profile?: { full_name: string | null; email: string; clients: { name: string } | null };
+	} = $props();
+
+	const displayName = $derived(profile?.full_name || profile?.email || '');
+	const companyName = $derived(profile?.clients?.name || '');
+	const initials = $derived(
+		displayName
+			.split(' ')
+			.map((p) => p[0])
+			.slice(0, 2)
+			.join('')
+			.toUpperCase()
+	);
 
 	const navItems = [
 		{ label: 'Support Center', href: '/portal' },
@@ -74,16 +91,24 @@
 		<!-- Client User Profile -->
 		<div class="flex items-center gap-3">
 			<div class="hidden text-right sm:block">
-				<p class="text-label-md font-semibold text-[var(--color-on-surface)]">Acme Corporation</p>
-				<p class="text-body-sm text-[var(--color-on-surface-variant)]">John Mathew</p>
+				<p class="text-label-md font-semibold text-[var(--color-on-surface)]">{companyName}</p>
+				<p class="text-body-sm text-[var(--color-on-surface-variant)]">{displayName}</p>
 			</div>
-			<div class="h-9 w-9 overflow-hidden rounded-full border border-[var(--color-outline-variant)] shadow-2xs">
-				<img
-					alt="John Mathew"
-					class="h-full w-full object-cover"
-					src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEAUC65ORPmsT6mXMOkdReMsILShQV97ex_PXYgmVq_kIeN65qT9x4jWaNu8k7nxOuVQfG92OtLJiYE_TI9CEgifKII1bhjCiviRh9b4GUtZpYPI-25e0R4xtzwqU1xVd9oZ_G7VvFQObpCjpeMeuIaEk4WTJ0yZvl9FUBXs77HLsNnwUF8oBLrc4SFYRR-cIR9EguzGkSXQPuYxXdGv0erR2770L7-_8S4C3dcJBlAm6kHLtAhLbADw"
-				/>
+			<div
+				class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[12px] font-bold text-[var(--color-on-surface-variant)] shadow-2xs"
+			>
+				{initials}
 			</div>
+			<form method="POST" action="/logout">
+				<button
+					type="submit"
+					class="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-on-surface-variant)] transition-colors hover:bg-[var(--color-surface-container)] hover:text-[var(--color-error)] cursor-pointer"
+					aria-label="Sign out"
+					title="Sign out"
+				>
+					<span class="material-symbols-outlined text-[20px]">logout</span>
+				</button>
+			</form>
 		</div>
 
 		<!-- Mobile menu toggle button -->

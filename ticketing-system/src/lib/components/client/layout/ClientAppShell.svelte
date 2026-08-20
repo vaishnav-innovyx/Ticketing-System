@@ -2,12 +2,18 @@
 	import ClientHeader from './ClientHeader.svelte';
 	import ClientFooter from './ClientFooter.svelte';
 
-	let { children }: { children: import('svelte').Snippet } = $props();
+	let {
+		children,
+		profile
+	}: {
+		children: import('svelte').Snippet;
+		profile?: { full_name: string | null; email: string; clients: { name: string } | null };
+	} = $props();
 	let mobileNavOpen = $state(false);
 </script>
 
 <div class="flex min-h-screen flex-col bg-[var(--color-surface)]">
-	<ClientHeader onMenuClick={() => (mobileNavOpen = !mobileNavOpen)} />
+	<ClientHeader {profile} onMenuClick={() => (mobileNavOpen = !mobileNavOpen)} />
 
 	<!-- Mobile Dropdown Menu -->
 	{#if mobileNavOpen}

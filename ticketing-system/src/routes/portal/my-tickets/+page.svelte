@@ -1,19 +1,35 @@
 <script lang="ts">
-	import { getPortalTickets, type PortalTicket } from '$lib/data/portalTickets';
+	import { STATUS_LABEL, CATEGORY_LABEL, PRIORITY_LABEL, formatRelative } from '$lib/portal/ticketDisplay';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
 
 	let searchQuery = $state('');
 	let statusFilter = $state('All');
 	let typeFilter = $state('All');
 	let appFilter = $state('All');
 
-	const tickets: PortalTicket[] = getPortalTickets();
+	const tickets = $derived(
+		data.tickets.map((t) => ({
+			id: t.token ?? t.id,
+			title: t.title,
+			description: t.description ?? '',
+			status: STATUS_LABEL[t.status],
+			category: CATEGORY_LABEL[t.category],
+			priority: PRIORITY_LABEL[t.priority],
+			application: t.projects?.name ?? '',
+			lastUpdated: formatRelative(t.updated_at)
+		}))
+	);
 
-	const totalCount = tickets.length;
-	const openCount = tickets.filter((t) => t.status !== 'Resolved').length;
-	const awaitingCount = tickets.filter(
-		(t) => t.status === 'Awaiting Your Response' || t.status === 'Awaiting Client'
-	).length;
-	const resolvedCount = tickets.filter((t) => t.status === 'Resolved').length;
+	const applicationOptions = $derived([...new Set(tickets.map((t) => t.application))]);
+
+	const totalCount = $derived(tickets.length);
+	const openCount = $derived(tickets.filter((t) => t.status !== 'Resolved').length);
+	const awaitingCount = $derived(
+		tickets.filter((t) => t.status === 'Awaiting Your Response' || t.status === 'Awaiting Client').length
+	);
+	const resolvedCount = $derived(tickets.filter((t) => t.status === 'Resolved').length);
 
 	const filteredTickets = $derived(
 		tickets.filter((t) => {
@@ -137,7 +153,8 @@
 				<option value="All">All Types</option>
 				<option value="Bug">Bug</option>
 				<option value="Enhancement">Enhancement</option>
-				<option value="Question">Question</option>
+				<option value="KT">KT</option>
+				<option value="Training">Training</option>
 			</select>
 
 			<select
@@ -145,9 +162,9 @@
 				class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] py-2 pl-3 pr-8 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] cursor-pointer hidden md:block"
 			>
 				<option value="All">All Applications</option>
-				<option value="Sales Dashboard">Sales Dashboard</option>
-				<option value="Admin Portal">Admin Portal</option>
-				<option value="Inventory Portal">Inventory Portal</option>
+				{#each applicationOptions as app}
+					<option value={app}>{app}</option>
+				{/each}
 			</select>
 
 			<button

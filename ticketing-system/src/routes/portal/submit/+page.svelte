@@ -1,29 +1,25 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import {
-		createPortalTicket,
-		type TicketCategory,
-		type TicketApplication,
-		type TicketPriority,
-		type PortalTicket
-	} from '$lib/data/portalTickets';
+	import { enhance } from '$app/forms';
+	import type { ActionData, PageData } from './$types';
 
-	// URL query params pre-selection (e.g. ?type=issue, ?type=enhancement, ?type=question)
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// URL query params pre-selection (e.g. ?type=issue, ?type=enhancement)
 	const initialType = page.url.searchParams.get('type');
 
 	let title = $state('');
 	let description = $state('');
-	let category = $state<TicketCategory>(
-		initialType === 'enhancement' ? 'Enhancement' : initialType === 'question' ? 'Question' : 'Bug'
-	);
-	let application = $state<TicketApplication>('Sales Dashboard');
-	let priority = $state<TicketPriority>('Medium');
+	let category = $state(initialType === 'enhancement' ? 'enhancement' : 'bug');
+	let projectId = $state(data.projects[0]?.id ?? '');
+	let priority = $state('medium');
 	let files = $state<Array<{ name: string; size: string; type: string }>>([]);
 	let ccEmailInput = $state('');
 	let ccRecipients = $state<Array<{ name: string; email: string }>>([]);
 	let emailError = $state('');
-	let submittedTicket = $state<PortalTicket | null>(null);
 	let isSubmitting = $state(false);
+
+	const submittedTicket = $derived(form?.ticket ?? null);
 
 	const teamSuggestions = [
 		{ name: 'Sarah Jenkins', email: 'sarah.j@acme.inc' },
@@ -101,37 +97,6 @@
 		files = files.filter((_, i) => i !== index);
 	}
 
-	function handleSubmit(e: Event) {
-		e.preventDefault();
-		if (!title.trim() || !description.trim()) return;
-
-		isSubmitting = true;
-		setTimeout(() => {
-			submittedTicket = createPortalTicket({
-				title,
-				description,
-				category,
-				application,
-				priority,
-				attachments: files,
-				ccRecipients: ccRecipients.map((r) => r.email)
-			});
-			isSubmitting = false;
-		}, 300);
-	}
-
-	function resetForm() {
-		submittedTicket = null;
-		title = '';
-		description = '';
-		category = 'Bug';
-		application = 'Sales Dashboard';
-		priority = 'Medium';
-		files = [];
-		ccRecipients = [];
-		ccEmailInput = '';
-		emailError = '';
-	}
 </script>
 
 <svelte:head>
@@ -185,13 +150,12 @@
 					<span>View Ticket #{submittedTicket.id}</span>
 					<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
 				</a>
-				<button
-					type="button"
-					onclick={resetForm}
-					class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] px-6 py-2.5 text-label-md font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors cursor-pointer"
+				<a
+					href="/portal/submit"
+					class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] px-6 py-2.5 text-label-md font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors"
 				>
 					Raise Another Ticket
-				</button>
+				</a>
 			</div>
 		</div>
 	{:else}
@@ -217,7 +181,28 @@
 		<!-- 2-Column Layout (Form on Left, Guidelines on Right) -->
 		<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 			<!-- Left Form Column (8 cols) -->
-			<form onsubmit={handleSubmit} class="lg:col-span-8 flex flex-col gap-6">
+			<form
+				method="POST"
+				enctype="multipart/form-data"
+				use:enhance={() => {
+					isSubmitting = true;
+					return async ({ update }) => {
+						isSubmitting = false;
+						await update();
+					};
+				}}
+				class="lg:col-span-8 flex flex-col gap-6"
+			>
+				{#if form?.error}
+					<div class="rounded-lg border border-[var(--color-error)]/40 bg-[var(--color-error)]/10 px-4 py-2.5 text-body-sm text-[var(--color-error)]">
+						{form.error}
+					</div>
+				{/if}
+
+				{#each ccRecipients as recipient}
+					<input type="hidden" name="cc" value={recipient.email} />
+				{/each}
+
 				<!-- Section 1: Issue Details -->
 				<div class="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] p-6 shadow-xs space-y-4">
 					<h2 class="text-lg font-bold text-[var(--color-on-surface)] pb-3 border-b border-[var(--color-border-subtle)]">
@@ -230,6 +215,7 @@
 						</label>
 						<input
 							id="issue-title"
+							name="title"
 							type="text"
 							required
 							bind:value={title}
@@ -244,6 +230,7 @@
 						</label>
 						<textarea
 							id="issue-desc"
+						name="description"
 							required
 							rows="6"
 							bind:value={description}
@@ -361,57 +348,30 @@
 						What kind of request is this?
 					</h2>
 
-					<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-						<label
-							class="relative flex items-center gap-3.5 rounded-lg border p-4 cursor-pointer transition-all {category === 'Bug'
-								? 'border-[var(--color-primary)] bg-[var(--color-primary-fixed)]/20 shadow-2xs'
-								: 'border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-container-low)]'}"
-						>
-							<input type="radio" name="category" value="Bug" bind:group={category} class="sr-only" />
-							<span class="material-symbols-outlined {category === 'Bug' ? 'text-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)]'}">
-								bug_report
-							</span>
-							<span class="text-label-md font-semibold text-[var(--color-on-surface)]">Report an Issue</span>
-							<div class="ml-auto h-4 w-4 rounded-full border border-[var(--color-outline)] flex items-center justify-center {category === 'Bug' ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : ''}">
-								{#if category === 'Bug'}
-									<div class="h-1.5 w-1.5 rounded-full bg-white"></div>
-								{/if}
-							</div>
-						</label>
-
-						<label
-							class="relative flex items-center gap-3.5 rounded-lg border p-4 cursor-pointer transition-all {category === 'Enhancement'
-								? 'border-[var(--color-primary)] bg-[var(--color-primary-fixed)]/20 shadow-2xs'
-								: 'border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-container-low)]'}"
-						>
-							<input type="radio" name="category" value="Enhancement" bind:group={category} class="sr-only" />
-							<span class="material-symbols-outlined {category === 'Enhancement' ? 'text-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)]'}">
-								upgrade
-							</span>
-							<span class="text-label-md font-semibold text-[var(--color-on-surface)]">Enhancement</span>
-							<div class="ml-auto h-4 w-4 rounded-full border border-[var(--color-outline)] flex items-center justify-center {category === 'Enhancement' ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : ''}">
-								{#if category === 'Enhancement'}
-									<div class="h-1.5 w-1.5 rounded-full bg-white"></div>
-								{/if}
-							</div>
-						</label>
-
-						<label
-							class="relative flex items-center gap-3.5 rounded-lg border p-4 cursor-pointer transition-all {category === 'Question'
-								? 'border-[var(--color-primary)] bg-[var(--color-primary-fixed)]/20 shadow-2xs'
-								: 'border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-container-low)]'}"
-						>
-							<input type="radio" name="category" value="Question" bind:group={category} class="sr-only" />
-							<span class="material-symbols-outlined {category === 'Question' ? 'text-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)]'}">
-								help
-							</span>
-							<span class="text-label-md font-semibold text-[var(--color-on-surface)]">Ask a Question</span>
-							<div class="ml-auto h-4 w-4 rounded-full border border-[var(--color-outline)] flex items-center justify-center {category === 'Question' ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : ''}">
-								{#if category === 'Question'}
-									<div class="h-1.5 w-1.5 rounded-full bg-white"></div>
-								{/if}
-							</div>
-						</label>
+					<div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+						{#each [
+							{ value: 'bug', label: 'Report an Issue', icon: 'bug_report' },
+							{ value: 'enhancement', label: 'Enhancement', icon: 'upgrade' },
+							{ value: 'kt', label: 'Knowledge Transfer', icon: 'school' },
+							{ value: 'training', label: 'Training', icon: 'help' }
+						] as opt}
+							<label
+								class="relative flex items-center gap-3.5 rounded-lg border p-4 cursor-pointer transition-all {category === opt.value
+									? 'border-[var(--color-primary)] bg-[var(--color-primary-fixed)]/20 shadow-2xs'
+									: 'border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-container-low)]'}"
+							>
+								<input type="radio" name="category" value={opt.value} bind:group={category} class="sr-only" />
+								<span class="material-symbols-outlined {category === opt.value ? 'text-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)]'}">
+									{opt.icon}
+								</span>
+								<span class="text-label-md font-semibold text-[var(--color-on-surface)]">{opt.label}</span>
+								<div class="ml-auto h-4 w-4 rounded-full border border-[var(--color-outline)] flex items-center justify-center {category === opt.value ? 'border-[var(--color-primary)] bg-[var(--color-primary)]' : ''}">
+									{#if category === opt.value}
+										<div class="h-1.5 w-1.5 rounded-full bg-white"></div>
+									{/if}
+								</div>
+							</label>
+						{/each}
 					</div>
 				</div>
 
@@ -421,26 +381,27 @@
 						Which application is affected?
 					</h2>
 
-					<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-						{#each [
-							{ name: 'Sales Dashboard', icon: 'monitoring' },
-							{ name: 'Inventory Portal', icon: 'inventory_2' },
-							{ name: 'Analytics Hub', icon: 'analytics' },
-							{ name: 'General', icon: 'apps' }
-						] as app}
-							<label
-								class="flex flex-col items-center gap-2 rounded-lg border p-4 text-center cursor-pointer transition-all {application === app.name
-									? 'border-[var(--color-primary)] bg-[var(--color-primary-fixed)]/20 shadow-2xs'
-									: 'border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-container-low)]'}"
-							>
-								<input type="radio" name="application" value={app.name} bind:group={application} class="sr-only" />
-								<span class="material-symbols-outlined text-2xl {application === app.name ? 'text-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)]'}">
-									{app.icon}
-								</span>
-								<span class="text-label-md font-medium text-[var(--color-on-surface)]">{app.name}</span>
-							</label>
-						{/each}
-					</div>
+					{#if data.projects.length === 0}
+						<p class="text-body-sm text-[var(--color-on-surface-variant)]">
+							You aren't assigned to any application yet. Contact your client admin.
+						</p>
+					{:else}
+						<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+							{#each data.projects as proj}
+								<label
+									class="flex flex-col items-center gap-2 rounded-lg border p-4 text-center cursor-pointer transition-all {projectId === proj.id
+										? 'border-[var(--color-primary)] bg-[var(--color-primary-fixed)]/20 shadow-2xs'
+										: 'border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-container-low)]'}"
+								>
+									<input type="radio" name="project_id" value={proj.id} bind:group={projectId} class="sr-only" />
+									<span class="material-symbols-outlined text-2xl {projectId === proj.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-on-surface-variant)]'}">
+										apps
+									</span>
+									<span class="text-label-md font-medium text-[var(--color-on-surface)]">{proj.name}</span>
+								</label>
+							{/each}
+						</div>
+					{/if}
 				</div>
 
 				<!-- Section 5: Urgency Level -->
@@ -451,10 +412,10 @@
 
 					<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
 						{#each [
-							{ level: 'Low', desc: 'General question / minor', dot: 'bg-slate-400' },
-							{ level: 'Medium', desc: 'Standard business impact', dot: 'bg-blue-500' },
-							{ level: 'High', desc: 'Important feature degraded', dot: 'bg-amber-500' },
-							{ level: 'Critical', desc: 'System outage / blocker', dot: 'bg-rose-500' }
+							{ level: 'low', label: 'Low', desc: 'General question / minor', dot: 'bg-slate-400' },
+							{ level: 'medium', label: 'Medium', desc: 'Standard business impact', dot: 'bg-blue-500' },
+							{ level: 'high', label: 'High', desc: 'Important feature degraded', dot: 'bg-amber-500' },
+							{ level: 'critical', label: 'Critical', desc: 'System outage / blocker', dot: 'bg-rose-500' }
 						] as urg}
 							<label
 								class="flex flex-col gap-1.5 rounded-lg border p-3.5 cursor-pointer transition-all {priority === urg.level
@@ -464,7 +425,7 @@
 								<input type="radio" name="priority" value={urg.level} bind:group={priority} class="sr-only" />
 								<div class="flex items-center gap-2">
 									<div class="h-2.5 w-2.5 rounded-full {urg.dot}"></div>
-									<span class="text-label-md font-bold text-[var(--color-on-surface)]">{urg.level}</span>
+									<span class="text-label-md font-bold text-[var(--color-on-surface)]">{urg.label}</span>
 								</div>
 								<span class="text-[11px] text-[var(--color-on-surface-variant)]">{urg.desc}</span>
 							</label>
@@ -492,6 +453,7 @@
 						</p>
 						<input
 							type="file"
+						name="attachments"
 							multiple
 							onchange={handleFileAdd}
 							class="absolute inset-0 opacity-0 cursor-pointer"

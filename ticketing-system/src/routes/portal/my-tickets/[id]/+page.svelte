@@ -1,26 +1,68 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import { getTicketById, addTicketReply, type PortalTicket } from '$lib/data/portalTickets';
+	import { enhance } from '$app/forms';
 	import TicketProgressStepper from '$lib/components/client/portal/TicketProgressStepper.svelte';
+	import {
+		STATUS_LABEL,
+		STATUS_STEP,
+		CATEGORY_LABEL,
+		PRIORITY_LABEL,
+		formatDateTime,
+		formatBytes,
+		attachmentType,
+		roleLabel,
+		isClientRole
+	} from '$lib/portal/ticketDisplay';
+	import type { PageData } from './$types';
 
-	const ticketId = $derived(page.params.id || 'TK-1042');
-	let ticket = $derived(getTicketById(ticketId) || getTicketById('TK-1042'));
+	let { data }: { data: PageData } = $props();
+
+	const assignee = $derived.by(() => {
+		const t = data.ticket;
+		const pick =
+			t.status === 'development'
+				? t.specialist
+				: t.status === 'delivery' || t.status === 'closed'
+					? t.delivery_lead
+					: t.poc;
+		return pick
+			? { name: pick.full_name ?? 'Unassigned', role: roleLabel(pick.role) }
+			: { name: 'Triage Queue', role: 'Pending assignment' };
+	});
+
+	const ticket = $derived({
+		id: data.ticket.token ?? data.ticket.id,
+		title: data.ticket.title,
+		description: data.ticket.description ?? '',
+		status: STATUS_LABEL[data.ticket.status],
+		category: CATEGORY_LABEL[data.ticket.category],
+		priority: PRIORITY_LABEL[data.ticket.priority],
+		application: data.ticket.projects?.name ?? '',
+		environment: data.ticket.environment,
+		createdAt: formatDateTime(data.ticket.raised_at),
+		assignee,
+		targetResolution: undefined as string | undefined,
+		progressStep: STATUS_STEP[data.ticket.status],
+		aiSummary: data.ticket.ai_summary as { whatWeUnderstand: string[]; possibleCause: string } | null,
+		ccRecipients: data.watchers.map((w) => w.email),
+		messages: data.messages.map((m) => ({
+			id: m.id,
+			author: m.author?.full_name ?? 'Unknown',
+			role: (m.author && isClientRole(m.author.role) ? 'client' : 'staff') as 'client' | 'staff',
+			badge: m.author ? roleLabel(m.author.role) : undefined,
+			timestamp: formatDateTime(m.created_at),
+			content: m.content,
+			attachments: data.attachments
+				.filter((a) => a.message_id === m.id)
+				.map((a) => ({ name: a.file_name, size: formatBytes(a.file_size_bytes), type: attachmentType(a.mime_type) }))
+		})),
+		attachments: data.attachments
+			.filter((a) => !a.message_id)
+			.map((a) => ({ name: a.file_name, size: formatBytes(a.file_size_bytes), type: attachmentType(a.mime_type) }))
+	});
 
 	let replyText = $state('');
 	let isSubmittingReply = $state(false);
 	let updateRequested = $state(false);
-
-	function handleSendReply(e: Event) {
-		e.preventDefault();
-		if (!replyText.trim() || !ticket) return;
-
-		isSubmittingReply = true;
-		setTimeout(() => {
-			addTicketReply(ticket!.id, replyText);
-			replyText = '';
-			isSubmittingReply = false;
-		}, 200);
-	}
 
 	function requestUpdate() {
 		updateRequested = true;
@@ -31,26 +73,11 @@
 </script>
 
 <svelte:head>
-	<title>{ticket ? `${ticket.id} - ${ticket.title}` : 'Ticket Details'} - Nexus Client Portal</title>
+	<title>{ticket.id} - {ticket.title} - Nexus Client Portal</title>
 </svelte:head>
 
 <div class="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 md:px-10 md:py-10 space-y-8">
-	{#if !ticket}
-		<div class="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] p-12 text-center shadow-xs">
-			<span class="material-symbols-outlined text-4xl text-[var(--color-outline)] mb-3">help_outline</span>
-			<h2 class="text-2xl font-bold text-[var(--color-on-surface)]">Ticket Not Found</h2>
-			<p class="text-body-md text-[var(--color-on-surface-variant)] mt-2">
-				The ticket ID "{ticketId}" does not exist or has been archived.
-			</p>
-			<a
-				href="/portal/my-tickets"
-				class="mt-6 inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary-container)] px-6 py-2.5 text-label-md font-semibold text-white hover:bg-[var(--color-primary)] transition-colors"
-			>
-				Back to My Tickets
-			</a>
-		</div>
-	{:else}
-		<!-- Header & Breadcrumbs -->
+	<!-- Header & Breadcrumbs -->
 		<div class="space-y-4">
 			<a
 				href="/portal/my-tickets"
@@ -163,11 +190,7 @@
 								<div class="flex items-start justify-between gap-3 mb-3">
 									<div class="flex items-center gap-3">
 										<div class="h-9 w-9 rounded-full overflow-hidden border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-high)] flex items-center justify-center font-bold text-[13px] text-[var(--color-on-surface)]">
-											{#if message.avatar}
-												<img src={message.avatar} alt={message.author} class="h-full w-full object-cover" />
-											{:else}
-												{message.author.slice(0, 2).toUpperCase()}
-											{/if}
+											{message.author.slice(0, 2).toUpperCase()}
 										</div>
 										<div>
 											<div class="flex items-center gap-2">
@@ -209,12 +232,25 @@
 					</div>
 
 					<!-- Interactive Reply Box -->
-					<form onsubmit={handleSendReply} class="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] p-5 shadow-xs space-y-3">
+					<form
+						method="POST"
+						action="?/reply"
+						use:enhance={() => {
+							isSubmittingReply = true;
+							return async ({ update }) => {
+								isSubmittingReply = false;
+								replyText = '';
+								await update();
+							};
+						}}
+						class="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] p-5 shadow-xs space-y-3"
+					>
 						<label for="reply-box" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
 							Add a Reply
 						</label>
 						<textarea
 							id="reply-box"
+							name="content"
 							rows="4"
 							required
 							bind:value={replyText}
@@ -256,12 +292,8 @@
 						<div>
 							<span class="text-label-sm uppercase tracking-wider text-[var(--color-outline)]">Assigned Engineer</span>
 							<div class="flex items-center gap-3 mt-1.5">
-								<div class="h-8 w-8 rounded-full overflow-hidden border border-[var(--color-border-subtle)]">
-									<img
-										src={ticket.assignee.avatar}
-										alt={ticket.assignee.name}
-										class="h-full w-full object-cover"
-									/>
+								<div class="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-high)] text-[11px] font-bold text-[var(--color-on-surface-variant)]">
+									{ticket.assignee.name.slice(0, 2).toUpperCase()}
 								</div>
 								<div>
 									<div class="font-bold text-[var(--color-on-surface)]">{ticket.assignee.name}</div>
@@ -333,13 +365,17 @@
 						</button>
 					{/if}
 
-					<button
-						type="button"
-						class="w-full flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] py-2.5 text-label-md font-semibold text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] hover:text-[var(--color-on-surface)] transition-colors cursor-pointer"
-					>
-						<span class="material-symbols-outlined text-[18px]">lock_reset</span>
-						<span>Mark as Resolved</span>
-					</button>
+					{#if ticket.status !== 'Resolved'}
+						<form method="POST" action="?/close" use:enhance>
+							<button
+								type="submit"
+								class="w-full flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] py-2.5 text-label-md font-semibold text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] hover:text-[var(--color-on-surface)] transition-colors cursor-pointer"
+							>
+								<span class="material-symbols-outlined text-[18px]">lock_reset</span>
+								<span>Mark as Resolved</span>
+							</button>
+						</form>
+					{/if}
 				</div>
 
 				<!-- Attached Files Card -->
@@ -368,5 +404,4 @@
 				{/if}
 			</div>
 		</div>
-	{/if}
 </div>

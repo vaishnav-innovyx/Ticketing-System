@@ -4,6 +4,10 @@
 	import TicketStatusDonut from '$lib/components/dashboard/TicketStatusDonut.svelte';
 	import TicketPriorityBars from '$lib/components/dashboard/TicketPriorityBars.svelte';
 	import RecentActivityList from '$lib/components/dashboard/RecentActivityList.svelte';
+	import type { LayoutData } from './$types';
+
+	let { data }: { data: LayoutData } = $props();
+	const firstName = $derived(data?.profile?.full_name?.split(' ')[0] || data?.profile?.email?.split('@')[0] || 'Admin');
 
 	const kpiMetrics = [
 		{
@@ -59,7 +63,7 @@
 				</span>
 			</div>
 			<h1 class="text-headline-md font-bold text-[var(--color-on-surface)] mt-1">
-				Good morning, Alex.
+				Good morning, {firstName}.
 			</h1>
 			<p class="text-body-md mt-1 text-[var(--color-on-surface-variant)]">
 				Here's what's happening across your internal tickets and queues.
