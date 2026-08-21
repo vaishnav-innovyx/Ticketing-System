@@ -4,9 +4,11 @@
 
 	let {
 		profile,
+		unreadMessageCount = 0,
 		children
 	}: {
 		profile?: { id: string; full_name: string | null; email: string; role: string } | null;
+		unreadMessageCount?: number;
 		children: import('svelte').Snippet;
 	} = $props();
 
@@ -16,7 +18,7 @@
 <div class="flex min-h-screen bg-[var(--color-surface)]">
 	<!-- Desktop Persistent Sidebar -->
 	<div class="hidden md:fixed md:inset-y-0 md:left-0 md:z-40 md:flex md:w-[260px]">
-		<Sidebar {profile} />
+		<Sidebar {profile} {unreadMessageCount} />
 	</div>
 
 	<!-- Mobile Sidebar Backdrop Overlay -->
@@ -35,7 +37,7 @@
 			? 'translate-x-0'
 			: '-translate-x-full'}"
 	>
-		<Sidebar {profile} onClose={() => (mobileMenuOpen = false)} />
+		<Sidebar {profile} {unreadMessageCount} onClose={() => (mobileMenuOpen = false)} />
 	</div>
 
 	<!-- Main Content Area -->

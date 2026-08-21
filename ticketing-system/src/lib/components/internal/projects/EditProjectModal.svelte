@@ -1,29 +1,41 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 
+	interface ProjectData {
+		id: string;
+		name: string;
+		code: string;
+		client?: { name?: string; code?: string } | null;
+		default_poc_id?: string | null;
+		team?: { id: string }[];
+	}
+
 	let {
 		open = $bindable(false),
-		clients = [],
-		selectedClientId = null,
+		project = null,
 		internalStaff = [],
-		onProjectCreated
+		onProjectUpdated
 	}: {
 		open: boolean;
-		clients?: { id: string; name: string; code: string }[];
-		selectedClientId?: string | null;
+		project: ProjectData | null;
 		internalStaff?: { id: string; full_name: string | null; email: string; role: string }[];
-		onProjectCreated?: (projectId: string) => void;
+		onProjectUpdated?: (projectId: string) => void;
 	} = $props();
 
 	let isSubmitting = $state(false);
 	let errorMessage = $state<string | null>(null);
-
-	let clientId = $state('');
 	let name = $state('');
-	let code = $state('');
-	let codeManuallyEdited = $state(false);
-	let selectedTeamMemberIds = $state<string[]>([]);
 	let defaultPocId = $state('');
+	let selectedTeamMemberIds = $state<string[]>([]);
+
+	$effect(() => {
+		if (project && open) {
+			name = project.name;
+			defaultPocId = project.default_poc_id || '';
+			selectedTeamMemberIds = project.team?.map((t) => t.id) || [];
+			errorMessage = null;
+		}
+	});
 
 	// Default POC must be someone who can actually see this project's tickets:
 	// either a super_admin (sees everything regardless of membership), or a
@@ -45,38 +57,8 @@
 			: [...selectedTeamMemberIds, id];
 	}
 
-	$effect(() => {
-		if (selectedClientId) {
-			clientId = selectedClientId;
-		} else if (!clientId && clients.length > 0) {
-			clientId = clients[0].id;
-		}
-	});
-
-	// Auto-generate project code from project name if user hasn't typed it manually
-	$effect(() => {
-		if (!codeManuallyEdited && name) {
-			code = name
-				.trim()
-				.toUpperCase()
-				.replace(/[^A-Z0-9]/g, '')
-				.slice(0, 8);
-		}
-	});
-
-	const activeClient = $derived(clients.find((c) => c.id === clientId) || null);
-
 	function handleClose() {
 		open = false;
-		errorMessage = null;
-	}
-
-	function resetForm() {
-		name = '';
-		code = '';
-		codeManuallyEdited = false;
-		selectedTeamMemberIds = [];
-		defaultPocId = '';
 		errorMessage = null;
 	}
 </script>
@@ -87,7 +69,7 @@
 	}}
 />
 
-{#if open}
+{#if open && project}
 	<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
 		<!-- Backdrop -->
 		<button
@@ -99,20 +81,20 @@
 
 		<!-- Modal Dialog -->
 		<div
-			class="relative w-full max-w-lg rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] p-6 shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200"
+			class="relative w-full max-w-lg rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] p-6 shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
 		>
 			<!-- Modal Header -->
 			<div class="flex items-center justify-between border-b border-[var(--color-outline-variant)]/40 pb-4">
 				<div class="flex items-center gap-3">
-					<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
-						<span class="material-symbols-outlined text-[22px]">folder_special</span>
+					<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+						<span class="material-symbols-outlined text-[22px]">edit_note</span>
 					</div>
 					<div>
 						<h2 class="text-title-lg font-bold text-[var(--color-on-surface)]">
-							New Project Workspace
+							Edit Project
 						</h2>
 						<p class="text-body-xs text-[var(--color-on-surface-variant)]">
-							Create a project workspace for ticket tracking and task scoping.
+							{project.client?.name ?? 'Client'} &bull; {project.client?.code ?? ''}-{project.code}
 						</p>
 					</div>
 				</div>
@@ -138,97 +120,59 @@
 			<!-- Form -->
 			<form
 				method="POST"
-				action="?/createProject"
+				action="?/updateProject"
 				use:enhance={() => {
 					isSubmitting = true;
 					errorMessage = null;
 					return async ({ result, update }) => {
 						isSubmitting = false;
 						if (result.type === 'failure') {
-							errorMessage = (result.data as { error?: string })?.error ?? 'Failed to create project.';
+							errorMessage = (result.data as { error?: string })?.error ?? 'Failed to update project.';
 						} else if (result.type === 'success') {
-							const createdId = (result.data as { createdProjectId?: string })?.createdProjectId;
-							resetForm();
+							const updatedId = (result.data as { updatedProjectId?: string })?.updatedProjectId;
 							open = false;
-							if (createdId && onProjectCreated) {
-								onProjectCreated(createdId);
-							}
+							if (updatedId && onProjectUpdated) onProjectUpdated(updatedId);
 							await update();
 						}
 					};
 				}}
 				class="mt-5 space-y-4"
 			>
-				<!-- Target Client Selection -->
+				<input type="hidden" name="project_id" value={project.id} />
+
+				<!-- Project Code (read-only, baked into ticket tokens) -->
 				<div class="space-y-1.5">
-					<label for="project-client-select" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
-						Client Organization <span class="text-[var(--color-error)]">*</span>
-					</label>
-					{#if clients.length > 0}
-						<select
-							id="project-client-select"
-							name="client_id"
-							required
-							bind:value={clientId}
-							class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-body-md text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)] focus:ring-2 focus:ring-[var(--color-primary-container)]/20"
-						>
-							{#each clients as client}
-								<option value={client.id}>{client.name} ({client.code})</option>
-							{/each}
-						</select>
-					{:else}
-						<input type="hidden" name="client_id" value={clientId} />
-						<div class="rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)] px-3.5 py-2.5 text-body-sm font-medium text-[var(--color-on-surface)]">
-							{activeClient?.name ?? 'Selected Client'}
-						</div>
-					{/if}
+					<span class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+						Project Code
+					</span>
+					<div class="rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)] px-3.5 py-2.5 text-body-md font-mono font-bold text-[var(--color-on-surface-variant)]">
+						{project.code}
+					</div>
 				</div>
 
 				<!-- Project Name -->
 				<div class="space-y-1.5">
-					<label for="project-name" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+					<label for="edit-project-name" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
 						Project Name <span class="text-[var(--color-error)]">*</span>
 					</label>
 					<input
-						id="project-name"
+						id="edit-project-name"
 						name="name"
 						type="text"
 						required
-						placeholder="e.g. Mobile Banking Application"
 						bind:value={name}
-						class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-body-md text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)] outline-none focus:border-[var(--color-primary-container)] focus:ring-2 focus:ring-[var(--color-primary-container)]/20"
+						class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-body-md text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)] focus:ring-2 focus:ring-[var(--color-primary-container)]/20"
 					/>
-				</div>
-
-				<!-- Project Code -->
-				<div class="space-y-1.5">
-					<label for="project-code" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
-						Project Code <span class="text-[var(--color-error)]">*</span>
-					</label>
-					<input
-						id="project-code"
-						name="code"
-						type="text"
-						required
-						maxlength="8"
-						placeholder="e.g. MBANK"
-						bind:value={code}
-						oninput={() => (codeManuallyEdited = true)}
-						class="w-full uppercase font-mono font-bold tracking-wider rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-body-md text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)] outline-none focus:border-[var(--color-primary-container)] focus:ring-2 focus:ring-[var(--color-primary-container)]/20"
-					/>
-					<p class="text-[11px] text-[var(--color-on-surface-variant)]">
-						Generates ticket prefixes: <span class="font-mono font-bold text-[var(--color-primary)]">{activeClient?.code || 'CLIENT'}-{code || 'PROJECT'}-TK-0001</span>
-					</p>
 				</div>
 
 				<!-- Default POC -->
 				{#if pocCandidates.length > 0}
 					<div class="space-y-1.5">
-						<label for="project-default-poc" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+						<label for="edit-project-default-poc" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
 							Default POC
 						</label>
 						<select
-							id="project-default-poc"
+							id="edit-project-default-poc"
 							name="default_poc_id"
 							bind:value={defaultPocId}
 							class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-body-md text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)] focus:ring-2 focus:ring-[var(--color-primary-container)]/20"
@@ -238,9 +182,6 @@
 								<option value={staff.id}>{staff.full_name || staff.email}</option>
 							{/each}
 						</select>
-						<p class="text-[11px] text-[var(--color-on-surface-variant)]">
-							Auto-assigned as PoC on every new ticket raised for this project.
-						</p>
 					</div>
 				{/if}
 
@@ -271,9 +212,6 @@
 								</label>
 							{/each}
 						</div>
-						<p class="text-[11px] text-[var(--color-on-surface-variant)]">
-							Grants access to this project's tickets (specialists, POCs, delivery leads).
-						</p>
 					</div>
 				{/if}
 
@@ -290,15 +228,15 @@
 
 					<button
 						type="submit"
-						disabled={isSubmitting || !name.trim() || !code.trim() || !clientId}
+						disabled={isSubmitting || !name.trim()}
 						class="nexus-primary-button h-10 px-5 text-label-md shadow-sm disabled:opacity-50 flex items-center gap-2 cursor-pointer"
 					>
 						{#if isSubmitting}
 							<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-							<span>Creating...</span>
+							<span>Saving...</span>
 						{:else}
-							<span class="material-symbols-outlined text-[18px]">check</span>
-							<span>Create Project</span>
+							<span class="material-symbols-outlined text-[18px]">save</span>
+							<span>Save Changes</span>
 						{/if}
 					</button>
 				</div>

@@ -14,11 +14,13 @@
 			id: t.token ?? t.id,
 			title: t.title,
 			description: t.description ?? '',
-			status: STATUS_LABEL[t.status],
+			status: t.status === 'client_approval' && t.client_approved_at ? 'Approved — Starting Soon' : STATUS_LABEL[t.status],
 			category: CATEGORY_LABEL[t.category],
 			priority: PRIORITY_LABEL[t.priority],
 			application: t.projects?.name ?? '',
-			lastUpdated: formatRelative(t.updated_at)
+			lastUpdated: formatRelative(t.updated_at),
+			isPendingApproval: t.requires_admin_approval && !t.admin_approved_at && !t.admin_rejected_at,
+			isRejected: !!t.admin_rejected_at
 		}))
 	);
 
@@ -239,7 +241,17 @@
 									{ticket.application}
 								</td>
 								<td class="py-4 px-4 whitespace-nowrap">
-									{#if ticket.status === 'In Development'}
+									{#if ticket.isPendingApproval}
+										<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-100 text-amber-800 border border-amber-300 font-bold text-[11px] uppercase tracking-wider">
+											<span class="material-symbols-outlined text-[13px]">hourglass_top</span>
+											Pending Approval
+										</span>
+									{:else if ticket.isRejected}
+										<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[var(--color-error-container)] text-[var(--color-on-error-container)] font-bold text-[11px] uppercase tracking-wider">
+											<span class="material-symbols-outlined text-[13px]">block</span>
+											Rejected
+										</span>
+									{:else if ticket.status === 'In Development'}
 										<span class="inline-flex items-center px-2.5 py-1 rounded bg-[var(--color-primary-fixed)]/40 text-[var(--color-on-primary-fixed-variant)] font-bold text-[11px] uppercase tracking-wider">
 											IN DEVELOPMENT
 										</span>

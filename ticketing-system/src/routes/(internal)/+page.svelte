@@ -4,9 +4,10 @@
 	import TicketStatusDonut from '$lib/components/dashboard/TicketStatusDonut.svelte';
 	import TicketPriorityBars from '$lib/components/dashboard/TicketPriorityBars.svelte';
 	import RecentActivityList from '$lib/components/dashboard/RecentActivityList.svelte';
-	import type { LayoutData } from './$types';
+	import { STATUS_LABEL, formatMetricHours as formatHours, formatVariancePct as formatPct } from '$lib/portal/ticketDisplay';
+	import type { PageData } from './$types';
 
-	let { data }: { data: LayoutData } = $props();
+	let { data }: { data: PageData } = $props();
 	const firstName = $derived(data?.profile?.full_name?.split(' ')[0] || data?.profile?.email?.split('@')[0] || 'Admin');
 
 	const kpiMetrics = [
@@ -104,6 +105,101 @@
 				trendPositive={kpi.trendPositive}
 			/>
 		{/each}
+	</div>
+
+	<!-- Delivery Metrics: PoC TAT, Req Duration, Approval Delay, Effort Variance, Cycle Time -->
+	<div class="space-y-3">
+		<div class="flex items-center justify-between">
+			<h2 class="text-title-md font-bold text-[var(--color-on-surface)]">Delivery Metrics</h2>
+			<span class="text-body-xs text-[var(--color-on-surface-variant)]">Averaged across tickets you have visibility on</span>
+		</div>
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 md:gap-5">
+			<KpiCard
+				title="PoC TAT"
+				value={formatHours(data.deliveryMetrics.pocTat.avgHours)}
+				icon="assignment_turned_in"
+				iconBgClass="bg-[var(--color-surface-container)]"
+				iconColorClass="text-[var(--color-primary-container)]"
+				trendText={`${data.deliveryMetrics.pocTat.count} tickets`}
+				trendPositive
+			/>
+			<KpiCard
+				title="Req Duration"
+				value={formatHours(data.deliveryMetrics.reqDuration.avgHours)}
+				icon="schedule"
+				iconBgClass="bg-[var(--color-tertiary-fixed)]/30"
+				iconColorClass="text-[var(--color-tertiary)]"
+				trendText={`${data.deliveryMetrics.reqDuration.count} tickets`}
+				trendPositive
+			/>
+			<KpiCard
+				title="Approval Delay"
+				value={formatHours(data.deliveryMetrics.approvalDelay.avgHours)}
+				icon="thumb_up"
+				iconBgClass="bg-[var(--color-secondary-fixed)]/30"
+				iconColorClass="text-[var(--color-secondary)]"
+				trendText={`${data.deliveryMetrics.approvalDelay.count} tickets`}
+				trendPositive
+			/>
+			<KpiCard
+				title="Effort Variance"
+				value={formatPct(data.deliveryMetrics.effortVariance.avgPct)}
+				icon="balance"
+				iconBgClass="bg-[var(--color-secondary-container)]"
+				iconColorClass="text-[var(--color-on-secondary-container)]"
+				trendText={`${data.deliveryMetrics.effortVariance.count} tickets`}
+				trendPositive={(data.deliveryMetrics.effortVariance.avgPct ?? 0) <= 0}
+			/>
+			<KpiCard
+				title="Total Cycle Time"
+				value={formatHours(data.deliveryMetrics.cycleTime.avgHours)}
+				icon="cached"
+				iconBgClass="bg-[var(--color-surface-container)]"
+				iconColorClass="text-[var(--color-primary-container)]"
+				trendText={`${data.deliveryMetrics.cycleTime.count} tickets`}
+				trendPositive
+			/>
+		</div>
+
+		{#if data.ticketMetricsRows.length > 0}
+			<div class="nexus-card overflow-x-auto">
+				<table class="w-full text-body-sm">
+					<thead class="border-b border-[var(--color-outline-variant)]/40 text-label-xs uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+						<tr>
+							<th class="px-4 py-2.5 text-left">Ticket</th>
+							<th class="px-4 py-2.5 text-left">Status</th>
+							<th class="px-4 py-2.5 text-right">PoC TAT</th>
+							<th class="px-4 py-2.5 text-right">Req Duration</th>
+							<th class="px-4 py-2.5 text-right">Approval Delay</th>
+							<th class="px-4 py-2.5 text-right">Effort Variance</th>
+							<th class="px-4 py-2.5 text-right">Cycle Time</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-[var(--color-outline-variant)]/30">
+						{#each data.ticketMetricsRows as row}
+							<tr>
+								<td class="px-4 py-2.5">
+									<span class="font-mono font-semibold text-[var(--color-primary)]">{row.token}</span>
+									<span class="ml-2 text-[var(--color-on-surface-variant)] truncate">{row.title}</span>
+								</td>
+								<td class="px-4 py-2.5 text-[var(--color-on-surface-variant)]">{STATUS_LABEL[row.status] ?? row.status}</td>
+								<td class="px-4 py-2.5 text-right tabular-nums">{formatHours(row.pocTatHours)}</td>
+								<td class="px-4 py-2.5 text-right tabular-nums">{formatHours(row.reqDurationHours)}</td>
+								<td class="px-4 py-2.5 text-right tabular-nums">{formatHours(row.approvalDelayHours)}</td>
+								<td
+									class="px-4 py-2.5 text-right tabular-nums {row.effortVariancePct !== null && row.effortVariancePct > 20
+										? 'text-[var(--color-error)] font-semibold'
+										: ''}"
+								>
+									{formatPct(row.effortVariancePct)}
+								</td>
+								<td class="px-4 py-2.5 text-right tabular-nums">{formatHours(row.cycleTimeHours)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Middle Row: Ticket Activity Chart -->

@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { requireInternalRole } from '$lib/server/authz';
 import type { Actions, PageServerLoad } from './$types';
 
 const SEED_FALLBACK_TICKETS = [
@@ -114,11 +115,15 @@ const SEED_FALLBACK_TICKETS = [
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	try {
 		const [
-			{ data: dbTickets },
+			{ data: dbTickets, error: ticketsError },
 			{ data: dbClients },
 			{ data: dbProjects },
 			{ data: dbProfiles },
-			{ data: dbEvents }
+			{ data: dbEvents },
+			{ data: dbDependencies },
+			{ data: dbWatchers },
+			{ data: dbAttachments },
+			{ data: dbMessages }
 		] = await Promise.all([
 			supabase
 				.from('tickets')
@@ -127,15 +132,37 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			supabase.from('clients').select('id, code, name').order('name'),
 			supabase.from('projects').select('id, code, name, client_id').order('code'),
 			supabase.from('profiles').select('id, full_name, email, role'),
-			supabase.from('ticket_events').select('*, actor:profiles(full_name, email)').order('created_at', { ascending: true })
+			supabase.from('ticket_events').select('*, actor:profiles(full_name, email)').order('created_at', { ascending: true }),
+			supabase
+				.from('ticket_dependencies')
+				.select(
+					'id, ticket_id, depends_on:tickets!ticket_dependencies_depends_on_ticket_id_fkey(id, token, title, status)'
+				),
+			supabase.from('ticket_watchers').select('id, ticket_id, email, full_name'),
+			supabase
+				.from('ticket_attachments')
+				.select('id, ticket_id, file_name, file_size_bytes, mime_type, message_id')
+				.order('created_at', { ascending: false }),
+			supabase
+				.from('ticket_messages')
+				.select('id, ticket_id, content, created_at, author:profiles(full_name, role)')
+				.order('created_at', { ascending: true })
 		]);
 
 		const clients = dbClients || [];
 		const projects = dbProjects || [];
 		const profiles = dbProfiles || [];
 		const events = dbEvents || [];
+		const dependencies = dbDependencies || [];
+		const watchers = dbWatchers || [];
+		const attachments = dbAttachments || [];
+		const messages = dbMessages || [];
 
-		if (!dbTickets || dbTickets.length === 0) {
+		// Seed fallback is only for a genuine query failure (e.g. misconfigured Supabase
+		// connection) — NOT for a legitimately empty, RLS-scoped result. A specialist with
+		// zero visible tickets should see an empty state, not fabricated cross-tenant seed
+		// tickets from unrelated clients.
+		if (ticketsError) {
 			return {
 				tickets: SEED_FALLBACK_TICKETS,
 				clients: clients.length > 0 ? clients : [
@@ -148,8 +175,24 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			};
 		}
 
+		if (!dbTickets) {
+			return {
+				tickets: [],
+				clients,
+				projects,
+				internalStaff: profiles.filter((p) => !['client_admin', 'client_raiser', 'client_viewer'].includes(p.role))
+			};
+		}
+
 		const tickets = dbTickets.map((t) => {
 			const ticketEvents = events.filter((e) => e.ticket_id === t.id);
+			const ticketDependencies = dependencies
+				.filter((d) => d.ticket_id === t.id)
+				.map((d) => ({
+					id: d.id,
+					depends_on: Array.isArray(d.depends_on) ? d.depends_on[0] : d.depends_on
+				}))
+				.filter((d) => d.depends_on);
 			const clientInfo = Array.isArray(t.client) ? t.client[0] : t.client;
 			const projectInfo = Array.isArray(t.project) ? t.project[0] : t.project;
 
@@ -161,7 +204,16 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 				poc_profile: profiles.find((p) => p.id === t.poc_id) ?? null,
 				specialist_profile: profiles.find((p) => p.id === t.specialist_id) ?? null,
 				delivery_lead_profile: profiles.find((p) => p.id === t.delivery_lead_id) ?? null,
-				events: ticketEvents
+				events: ticketEvents,
+				dependencies: ticketDependencies,
+				watchers: watchers.filter((w) => w.ticket_id === t.id),
+				attachments: attachments.filter((a) => a.ticket_id === t.id),
+				messages: messages
+					.filter((m) => m.ticket_id === t.id)
+					.map((m) => ({
+						...m,
+						author: Array.isArray(m.author) ? m.author[0] : m.author
+					}))
 			};
 		});
 
@@ -202,10 +254,10 @@ export const actions: Actions = {
 			return fail(400, { error: 'Client, project, and title are required.', title });
 		}
 
-		// Look up client and project codes to build token
+		// Look up client and project codes to build token, and the project's default POC
 		const [{ data: clientRow }, { data: projectRow }] = await Promise.all([
 			supabase.from('clients').select('code').eq('id', clientId).single(),
-			supabase.from('projects').select('code').eq('id', projectId).single()
+			supabase.from('projects').select('code, default_poc_id').eq('id', projectId).single()
 		]);
 
 		const clientCode = clientRow?.code || 'CLIENT';
@@ -232,7 +284,8 @@ export const actions: Actions = {
 				category: category as never,
 				priority: priority as never,
 				status: 'raised' as never,
-				target_date: targetDate || undefined
+				target_date: targetDate || undefined,
+				poc_id: projectRow?.default_poc_id ?? undefined
 			} as never)
 			.select('id, token')
 			.single();
@@ -241,14 +294,8 @@ export const actions: Actions = {
 			return fail(500, { error: ticketError.message });
 		}
 
-		// Log initial event
-		await supabase.from('ticket_events').insert({
-			ticket_id: newTicket.id,
-			actor_id: user.id,
-			from_status: null,
-			to_status: 'raised',
-			notes: 'Ticket initially raised.'
-		});
+		// The log_ticket_status_change DB trigger already logs this insert to
+		// ticket_events automatically (attributed via raised_by) — no manual insert needed.
 
 		return { success: true, createdTicketId: newTicket.id };
 	},
@@ -256,6 +303,9 @@ export const actions: Actions = {
 	updateStatus: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Not authenticated.' });
+		if (!(await requireInternalRole(supabase, user.id))) {
+			return fail(403, { error: 'You do not have permission to change ticket status.' });
+		}
 
 		const formData = await request.formData();
 		const ticketId = String(formData.get('ticket_id') || '').trim();
@@ -265,8 +315,27 @@ export const actions: Actions = {
 			return fail(400, { error: 'Ticket ID and target status are required.' });
 		}
 
-		const { data: currentTicket } = await supabase.from('tickets').select('status').eq('id', ticketId).single();
+		const { data: currentTicket } = await supabase.from('tickets').select('status, client_approved_at').eq('id', ticketId).single();
 		const fromStatus = currentTicket?.status || null;
+
+		if (fromStatus === targetStatus) {
+			return { success: true };
+		}
+
+		if (targetStatus === 'closed') {
+			const { data: blockers } = await supabase
+				.from('ticket_dependencies')
+				.select('depends_on:tickets!ticket_dependencies_depends_on_ticket_id_fkey(token, status)')
+				.eq('ticket_id', ticketId);
+			const openBlockers = (blockers ?? [])
+				.map((b) => (Array.isArray(b.depends_on) ? b.depends_on[0] : b.depends_on))
+				.filter((dep) => dep && dep.status !== 'closed');
+			if (openBlockers.length > 0) {
+				return fail(400, {
+					error: `Cannot close: blocked by ${openBlockers.map((dep) => dep!.token).join(', ')}`
+				});
+			}
+		}
 
 		const updatePayload: Record<string, unknown> = {
 			status: targetStatus,
@@ -274,35 +343,41 @@ export const actions: Actions = {
 		};
 
 		// Set lifecycle timestamp flags
+		// Each timestamp marks the *end* of the stage it names, so it's stamped on the
+		// transition that leaves that stage (i.e. entering the next one) — not on entry.
 		const now = new Date().toISOString();
 		if (targetStatus === 'poc_triage') updatePayload.poc_responded_at = now;
-		if (targetStatus === 'requirement_estimation') updatePayload.requirement_completed_at = now;
-		if (targetStatus === 'client_approval') updatePayload.client_approved_at = now;
-		if (targetStatus === 'development') updatePayload.development_completed_at = now;
-		if (targetStatus === 'delivery') updatePayload.delivered_at = now;
+		if (targetStatus === 'client_approval') updatePayload.requirement_completed_at = now;
+		// Only stamp client_approved_at here if the client never approved via the portal
+		// (i.e. this is a super_admin override) — don't clobber the real approval time.
+		if (targetStatus === 'development' && fromStatus === 'client_approval' && !currentTicket?.client_approved_at) {
+			updatePayload.client_approved_at = now;
+		}
+		if (targetStatus === 'delivery') {
+			updatePayload.development_completed_at = now;
+			updatePayload.delivered_at = now;
+		}
 		if (targetStatus === 'closed') updatePayload.closed_at = now;
+		if (fromStatus === 'closed' && targetStatus !== 'closed') updatePayload.closed_at = null;
 
-		const { error } = await supabaseAdmin.from('tickets').update(updatePayload as never).eq('id', ticketId);
+		// Uses the request-scoped client (not supabaseAdmin) so the log_ticket_status_change
+		// DB trigger can resolve auth.uid() and attribute the resulting ticket_events row to
+		// the actual acting user — a manual insert here would just duplicate that trigger.
+		const { error } = await supabase.from('tickets').update(updatePayload as never).eq('id', ticketId);
 
 		if (error) {
 			return fail(500, { error: error.message });
 		}
 
-		// Log event
-		await supabaseAdmin.from('ticket_events').insert({
-			ticket_id: ticketId,
-			actor_id: user.id,
-			from_status: fromStatus as never,
-			to_status: targetStatus as never,
-			notes: `Status changed to ${targetStatus}`
-		});
-
 		return { success: true };
 	},
 
-	updateHours: async ({ request, locals: { safeGetSession } }) => {
+	updateHours: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Not authenticated.' });
+		if (!(await requireInternalRole(supabase, user.id))) {
+			return fail(403, { error: 'You do not have permission to update hours.' });
+		}
 
 		const formData = await request.formData();
 		const ticketId = String(formData.get('ticket_id') || '').trim();
@@ -327,9 +402,12 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	assignStaff: async ({ request, locals: { safeGetSession } }) => {
+	assignStaff: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Not authenticated.' });
+		if (!(await requireInternalRole(supabase, user.id))) {
+			return fail(403, { error: 'You do not have permission to assign staff.' });
+		}
 
 		const formData = await request.formData();
 		const ticketId = String(formData.get('ticket_id') || '').trim();
@@ -348,6 +426,139 @@ export const actions: Actions = {
 			return fail(500, { error: error.message });
 		}
 
+		return { success: true };
+	},
+
+	linkDependency: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const formData = await request.formData();
+		const ticketId = String(formData.get('ticket_id') || '').trim();
+		const dependsOnId = String(formData.get('depends_on_ticket_id') || '').trim();
+
+		if (!ticketId || !dependsOnId) return fail(400, { error: 'Both tickets are required.' });
+		if (ticketId === dependsOnId) return fail(400, { error: 'A ticket cannot depend on itself.' });
+
+		const { error: insertError } = await supabase
+			.from('ticket_dependencies')
+			.insert({ ticket_id: ticketId, depends_on_ticket_id: dependsOnId, created_by: user.id } as never);
+
+		if (insertError) return fail(400, { error: insertError.message });
+		return { success: true };
+	},
+
+	unlinkDependency: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const formData = await request.formData();
+		const dependencyId = String(formData.get('dependency_id') || '').trim();
+		if (!dependencyId) return fail(400, { error: 'Dependency id is required.' });
+
+		const { error: deleteError } = await supabase.from('ticket_dependencies').delete().eq('id', dependencyId);
+		if (deleteError) return fail(500, { error: deleteError.message });
+		return { success: true };
+	},
+
+	addWatcher: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const formData = await request.formData();
+		const ticketId = String(formData.get('ticket_id') || '').trim();
+		const email = String(formData.get('email') || '').trim().toLowerCase();
+
+		if (!ticketId || !email) return fail(400, { error: 'Ticket and email are required.' });
+
+		const { error: insertError } = await supabase.from('ticket_watchers').insert({ ticket_id: ticketId, email } as never);
+		if (insertError) return fail(400, { error: insertError.message });
+		return { success: true };
+	},
+
+	removeWatcher: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const formData = await request.formData();
+		const watcherId = String(formData.get('watcher_id') || '').trim();
+		if (!watcherId) return fail(400, { error: 'Watcher id is required.' });
+
+		const { error: deleteError } = await supabase.from('ticket_watchers').delete().eq('id', watcherId);
+		if (deleteError) return fail(500, { error: deleteError.message });
+		return { success: true };
+	},
+
+	attachFile: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+		if (!(await requireInternalRole(supabase, user.id))) {
+			return fail(403, { error: 'You do not have permission to attach files.' });
+		}
+
+		const formData = await request.formData();
+		const ticketId = String(formData.get('ticket_id') || '').trim();
+		const file = formData.get('file');
+		if (!ticketId || !(file instanceof File) || file.size === 0) {
+			return fail(400, { error: 'Ticket and a file are required.' });
+		}
+
+		const path = `${ticketId}/${crypto.randomUUID()}-${file.name}`;
+		const { error: uploadError } = await supabase.storage.from('ticket-attachments').upload(path, file);
+		if (uploadError) return fail(500, { error: uploadError.message });
+
+		const { error: insertError } = await supabase.from('ticket_attachments').insert({
+			ticket_id: ticketId,
+			uploaded_by: user.id,
+			file_name: file.name,
+			file_size_bytes: file.size,
+			mime_type: file.type,
+			storage_path: path
+		});
+		if (insertError) return fail(500, { error: insertError.message });
+
+		return { success: true };
+	},
+
+	reply: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+		if (!(await requireInternalRole(supabase, user.id))) {
+			return fail(403, { error: 'You do not have permission to post replies.' });
+		}
+
+		const formData = await request.formData();
+		const ticketId = String(formData.get('ticket_id') || '').trim();
+		const content = String(formData.get('content') || '').trim();
+		if (!ticketId || !content) return fail(400, { error: 'Ticket and message are required.' });
+
+		const { error: insertError } = await supabase
+			.from('ticket_messages')
+			.insert({ ticket_id: ticketId, author_id: user.id, content });
+
+		if (insertError) return fail(500, { error: insertError.message });
+
+		// Sending a reply implies you've read the thread up to now.
+		await supabase
+			.from('ticket_message_reads')
+			.upsert({ user_id: user.id, ticket_id: ticketId, last_read_at: new Date().toISOString() }, { onConflict: 'user_id,ticket_id' });
+
+		return { success: true };
+	},
+
+	markRead: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const formData = await request.formData();
+		const ticketId = String(formData.get('ticket_id') || '').trim();
+		if (!ticketId) return fail(400, { error: 'Ticket id is required.' });
+
+		const { error: upsertError } = await supabase
+			.from('ticket_message_reads')
+			.upsert({ user_id: user.id, ticket_id: ticketId, last_read_at: new Date().toISOString() }, { onConflict: 'user_id,ticket_id' });
+
+		if (upsertError) return fail(500, { error: upsertError.message });
 		return { success: true };
 	}
 };

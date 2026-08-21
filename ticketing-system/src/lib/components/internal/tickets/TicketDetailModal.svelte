@@ -1,6 +1,15 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { STATUS_LABEL, CATEGORY_LABEL, PRIORITY_LABEL } from '$lib/portal/ticketDisplay';
+	import { invalidateAll } from '$app/navigation';
+	import {
+		STATUS_LABEL,
+		CATEGORY_LABEL,
+		PRIORITY_LABEL,
+		BLOCKED_BADGE_CLASS,
+		computeTicketMetrics,
+		formatMetricHours,
+		formatVariancePct
+	} from '$lib/portal/ticketDisplay';
 
 	interface ProfileItem {
 		id: string;
@@ -29,6 +38,11 @@
 		target_date?: string | null;
 		estimated_hours?: number | null;
 		actual_hours?: number | null;
+		raised_at?: string | null;
+		poc_responded_at?: string | null;
+		requirement_completed_at?: string | null;
+		client_approved_at?: string | null;
+		closed_at?: string | null;
 		client_id: string;
 		project_id: string;
 		raised_by?: string | null;
@@ -42,17 +56,32 @@
 		specialist_profile?: ProfileItem | null;
 		delivery_lead_profile?: ProfileItem | null;
 		events?: TicketEvent[];
+		dependencies?: { id: string; depends_on: { id: string; token: string; title: string; status: string } }[];
+		watchers?: { id: string; email: string; full_name: string | null }[];
+		attachments?: { id: string; file_name: string; file_size_bytes: number | null; mime_type: string | null }[];
+		messages?: { id: string; content: string; created_at: string; author: { full_name: string | null; role: string } | null }[];
 		created_at: string;
+	}
+
+	interface ProjectTicketItem {
+		id: string;
+		token: string | null;
+		title: string;
+		status: string;
 	}
 
 	let {
 		open = $bindable(false),
 		ticket = null,
-		internalStaff = []
+		internalStaff = [],
+		projectTickets = [],
+		currentUserRole = null
 	}: {
 		open: boolean;
 		ticket: TicketData | null;
 		internalStaff?: ProfileItem[];
+		projectTickets?: ProjectTicketItem[];
+		currentUserRole?: string | null;
 	} = $props();
 
 	let isSubmitting = $state(false);
@@ -60,6 +89,19 @@
 	let estHours = $state<number | null>(null);
 	let actHours = $state<number | null>(null);
 	let transitionNotes = $state('');
+	let watcherEmail = $state('');
+	let isAttaching = $state(false);
+	let replyContent = $state('');
+	let lastMarkedReadTicketId = $state<string | null>(null);
+	let messagesContainer: HTMLDivElement | undefined = $state();
+
+	$effect(() => {
+		// Track the message list so this re-runs whenever it changes, and scroll to the latest.
+		ticket?.messages;
+		if (messagesContainer) {
+			messagesContainer.scrollTop = messagesContainer.scrollHeight;
+		}
+	});
 
 	$effect(() => {
 		if (ticket && open) {
@@ -67,6 +109,21 @@
 			actHours = ticket.actual_hours ?? null;
 			isEditingHours = false;
 			transitionNotes = '';
+		}
+	});
+
+	// Opening the modal on a ticket marks its conversation as read, so the
+	// Communication sidebar badge and inbox stay in sync with this view too.
+	$effect(() => {
+		if (open && ticket) {
+			if (ticket.id !== lastMarkedReadTicketId) {
+				lastMarkedReadTicketId = ticket.id;
+				const formData = new FormData();
+				formData.set('ticket_id', ticket.id);
+				fetch('?/markRead', { method: 'POST', body: formData }).then(() => invalidateAll());
+			}
+		} else {
+			lastMarkedReadTicketId = null;
 		}
 	});
 
@@ -124,6 +181,10 @@
 
 {#if open && ticket}
 	{@const currentStageIdx = getStageIndex(ticket.status)}
+	{@const metrics = computeTicketMetrics(ticket)}
+	{@const openBlockers = (ticket.dependencies ?? []).filter((d) => d.depends_on.status !== 'closed')}
+	{@const linkedIds = new Set((ticket.dependencies ?? []).map((d) => d.depends_on.id))}
+	{@const linkableTickets = projectTickets.filter((t) => !linkedIds.has(t.id))}
 
 	<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
 		<!-- Backdrop -->
@@ -154,6 +215,29 @@
 						<span class="inline-flex rounded-md bg-indigo-50 px-2 py-0.5 text-label-xs font-bold text-indigo-700">
 							{STATUS_LABEL[ticket.status] ?? ticket.status}
 						</span>
+						{#if openBlockers.length > 0 && ticket.status !== 'closed'}
+							<span
+								class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-label-xs font-bold {BLOCKED_BADGE_CLASS}"
+								title={`Blocked by ${openBlockers.map((d) => d.depends_on.token).join(', ')}`}
+							>
+								<span class="material-symbols-outlined text-[14px]">block</span>
+								<span>Blocked</span>
+							</span>
+						{:else if openBlockers.length > 0 && ticket.status === 'closed'}
+							<span
+								class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-label-xs font-bold text-amber-700"
+								title={`Reopened after this ticket closed: ${openBlockers.map((d) => d.depends_on.token).join(', ')}`}
+							>
+								<span class="material-symbols-outlined text-[14px]">warning</span>
+								<span>Dependency reopened</span>
+							</span>
+						{/if}
+						{#if ticket.target_date && ticket.status !== 'closed' && ticket.target_date < new Date().toISOString().slice(0, 10)}
+							<span class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-label-xs font-bold text-red-700">
+								<span class="material-symbols-outlined text-[14px]">event_busy</span>
+								<span>Overdue</span>
+							</span>
+						{/if}
 					</div>
 
 					<h2 class="text-title-lg font-bold text-[var(--color-on-surface)]">
@@ -166,6 +250,10 @@
 						<span class="font-mono font-semibold text-[var(--color-primary)]">{ticket.project?.name ?? 'Project'} ({ticket.project?.code ?? ''})</span>
 						<span>&bull;</span>
 						<span>Raised {new Date(ticket.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+						{#if ticket.target_date}
+							<span>&bull;</span>
+							<span>Target {new Date(ticket.target_date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+						{/if}
 					</p>
 				</div>
 
@@ -265,16 +353,39 @@
 							<span>Submit for Client Approval</span>
 						</button>
 					{:else if ticket.status === 'client_approval'}
-						<button
-							type="submit"
-							name="target_status"
-							value="development"
-							disabled={isSubmitting}
-							class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700"
-						>
-							<span class="material-symbols-outlined text-[16px]">play_arrow</span>
-							<span>Approve & Start Dev</span>
-						</button>
+						{#if ticket.client_approved_at}
+							<span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-1.5 text-label-sm font-medium text-emerald-700">
+								<span class="material-symbols-outlined text-[16px]">check_circle</span>
+								<span>Client approved {new Date(ticket.client_approved_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+							</span>
+							<button
+								type="submit"
+								name="target_status"
+								value="development"
+								disabled={isSubmitting}
+								class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700"
+							>
+								<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+								<span>Start Development</span>
+							</button>
+						{:else if currentUserRole === 'super_admin'}
+							<button
+								type="submit"
+								name="target_status"
+								value="development"
+								disabled={isSubmitting}
+								title="Override: normally the client approves this from the portal"
+								class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700"
+							>
+								<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+								<span>Force Approve &amp; Start (Override)</span>
+							</button>
+						{:else}
+							<span class="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1.5 text-label-sm font-medium text-amber-700">
+								<span class="material-symbols-outlined text-[16px]">hourglass_top</span>
+								<span>Awaiting client approval</span>
+							</span>
+						{/if}
 					{:else if ticket.status === 'development'}
 						<button
 							type="submit"
@@ -291,8 +402,9 @@
 							type="submit"
 							name="target_status"
 							value="closed"
-							disabled={isSubmitting}
-							class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer bg-gray-800 hover:bg-black"
+							disabled={isSubmitting || openBlockers.length > 0}
+							title={openBlockers.length > 0 ? `Blocked by ${openBlockers.map((d) => d.depends_on.token).join(', ')}` : undefined}
+							class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer bg-gray-800 hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							<span class="material-symbols-outlined text-[16px]">verified</span>
 							<span>Verify & Close Ticket</span>
@@ -310,31 +422,71 @@
 						</button>
 					{/if}
 
-					<!-- Reassign / Step selector for Super Admin -->
-					<select
-						name="manual_status"
-						class="h-9 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-2.5 text-body-xs text-[var(--color-on-surface)] outline-none"
-						onchange={(e) => {
-							const val = (e.target as HTMLSelectElement).value;
-							if (val) {
-								const form = (e.target as HTMLSelectElement).form;
-								if (form) {
-									const input = document.createElement('input');
-									input.type = 'hidden';
-									input.name = 'target_status';
-									input.value = val;
-									form.appendChild(input);
-									form.requestSubmit();
+					<!-- Reassign / Step selector, Super Admin only -->
+					{#if currentUserRole === 'super_admin'}
+						<select
+							name="manual_status"
+							class="h-9 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-2.5 text-body-xs text-[var(--color-on-surface)] outline-none"
+							onchange={(e) => {
+								const val = (e.target as HTMLSelectElement).value;
+								if (val) {
+									const form = (e.target as HTMLSelectElement).form;
+									if (form) {
+										const input = document.createElement('input');
+										input.type = 'hidden';
+										input.name = 'target_status';
+										input.value = val;
+										form.appendChild(input);
+										form.requestSubmit();
+									}
 								}
-							}
-						}}
-					>
-						<option value="">Jump directly to stage...</option>
-						{#each stages as stage}
-							<option value={stage.key}>{stage.label}</option>
-						{/each}
-					</select>
+							}}
+						>
+							<option value="">Jump directly to stage...</option>
+							{#each stages as stage}
+								{#if stage.key !== 'closed' || openBlockers.length === 0}
+									<option value={stage.key}>{stage.label}</option>
+								{/if}
+							{/each}
+						</select>
+					{/if}
 				</form>
+			</div>
+
+			<!-- Delivery Metrics -->
+			<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-lowest)] p-4 space-y-3">
+				<span class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface)] flex items-center gap-1.5">
+					<span class="material-symbols-outlined text-[18px] text-emerald-600">insights</span>
+					<span>Delivery Metrics</span>
+				</span>
+				<div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+					<div class="rounded-lg bg-[var(--color-surface-container-low)] p-3">
+						<span class="text-[11px] text-[var(--color-outline)] block uppercase font-medium">PoC TAT</span>
+						<p class="text-title-md font-bold text-[var(--color-on-surface)] mt-0.5">{formatMetricHours(metrics.pocTatHours)}</p>
+					</div>
+					<div class="rounded-lg bg-[var(--color-surface-container-low)] p-3">
+						<span class="text-[11px] text-[var(--color-outline)] block uppercase font-medium">Req Duration</span>
+						<p class="text-title-md font-bold text-[var(--color-on-surface)] mt-0.5">{formatMetricHours(metrics.reqDurationHours)}</p>
+					</div>
+					<div class="rounded-lg bg-[var(--color-surface-container-low)] p-3">
+						<span class="text-[11px] text-[var(--color-outline)] block uppercase font-medium">Approval Delay</span>
+						<p class="text-title-md font-bold text-[var(--color-on-surface)] mt-0.5">{formatMetricHours(metrics.approvalDelayHours)}</p>
+					</div>
+					<div class="rounded-lg bg-[var(--color-surface-container-low)] p-3">
+						<span class="text-[11px] text-[var(--color-outline)] block uppercase font-medium">Effort Variance</span>
+						<p
+							class="text-title-md font-bold mt-0.5 {metrics.effortVariancePct !== null && metrics.effortVariancePct > 20
+								? 'text-[var(--color-error)]'
+								: 'text-[var(--color-on-surface)]'}"
+						>
+							{formatVariancePct(metrics.effortVariancePct)}
+						</p>
+					</div>
+					<div class="rounded-lg bg-[var(--color-surface-container-low)] p-3">
+						<span class="text-[11px] text-[var(--color-outline)] block uppercase font-medium">Total Cycle Time</span>
+						<p class="text-title-md font-bold text-[var(--color-on-surface)] mt-0.5">{formatMetricHours(metrics.cycleTimeHours)}</p>
+					</div>
+				</div>
 			</div>
 
 			<!-- Meta Grid: Hours & Team Assignments -->
@@ -503,6 +655,205 @@
 				</div>
 			</div>
 
+			<!-- Dependencies -->
+			<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-lowest)] p-4 space-y-3">
+				<span class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface)] flex items-center gap-1.5">
+					<span class="material-symbols-outlined text-[18px] text-[var(--color-primary)]">link</span>
+					<span>Depends On</span>
+				</span>
+
+				{#if ticket.dependencies && ticket.dependencies.length > 0}
+					<div class="flex flex-wrap gap-2">
+						{#each ticket.dependencies as dep}
+							<form
+								method="POST"
+								action="?/unlinkDependency"
+								use:enhance={() => {
+									isSubmitting = true;
+									return async ({ update }) => {
+										isSubmitting = false;
+										await update();
+									};
+								}}
+								class="inline-flex"
+							>
+								<input type="hidden" name="dependency_id" value={dep.id} />
+								<button
+									type="submit"
+									disabled={isSubmitting}
+									class="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-label-xs font-semibold cursor-pointer {dep.depends_on.status !== 'closed'
+										? BLOCKED_BADGE_CLASS + ' border-transparent'
+										: 'bg-emerald-50 text-emerald-700 border-emerald-200'}"
+									title="Remove dependency"
+								>
+									<span class="font-mono">{dep.depends_on.token}</span>
+									<span class="material-symbols-outlined text-[14px]">close</span>
+								</button>
+							</form>
+						{/each}
+					</div>
+				{:else}
+					<p class="text-body-xs text-[var(--color-outline)]">No dependencies linked.</p>
+				{/if}
+
+				{#if linkableTickets.length > 0}
+					<form
+						method="POST"
+						action="?/linkDependency"
+						use:enhance={() => {
+							isSubmitting = true;
+							return async ({ update }) => {
+								isSubmitting = false;
+								await update();
+							};
+						}}
+						class="flex items-center gap-2 pt-1"
+					>
+						<input type="hidden" name="ticket_id" value={ticket.id} />
+						<select
+							name="depends_on_ticket_id"
+							required
+							class="h-8 flex-1 rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-2 text-[12px] font-medium"
+						>
+							<option value="">Link a ticket this one depends on...</option>
+							{#each linkableTickets as t}
+								<option value={t.id}>{t.token} — {t.title}</option>
+							{/each}
+						</select>
+						<button
+							type="submit"
+							disabled={isSubmitting}
+							class="nexus-secondary-button h-8 px-2.5 text-label-xs cursor-pointer"
+						>
+							Add
+						</button>
+					</form>
+				{/if}
+			</div>
+
+			<!-- Watchers -->
+			<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-lowest)] p-4 space-y-3">
+				<span class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface)] flex items-center gap-1.5">
+					<span class="material-symbols-outlined text-[18px] text-[var(--color-primary)]">visibility</span>
+					<span>Watchers (CC)</span>
+				</span>
+
+				{#if ticket.watchers && ticket.watchers.length > 0}
+					<div class="flex flex-wrap gap-2">
+						{#each ticket.watchers as w}
+							<form
+								method="POST"
+								action="?/removeWatcher"
+								use:enhance={() => {
+									isSubmitting = true;
+									return async ({ update }) => {
+										isSubmitting = false;
+										await update();
+									};
+								}}
+								class="inline-flex"
+							>
+								<input type="hidden" name="watcher_id" value={w.id} />
+								<button
+									type="submit"
+									disabled={isSubmitting}
+									class="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)] px-2 py-0.5 text-label-xs font-semibold cursor-pointer"
+									title="Remove watcher"
+								>
+									<span>{w.full_name ? `${w.full_name} <${w.email}>` : w.email}</span>
+									<span class="material-symbols-outlined text-[14px]">close</span>
+								</button>
+							</form>
+						{/each}
+					</div>
+				{:else}
+					<p class="text-body-xs text-[var(--color-outline)]">No watchers CC'd.</p>
+				{/if}
+
+				<form
+					method="POST"
+					action="?/addWatcher"
+					use:enhance={() => {
+						isSubmitting = true;
+						return async ({ update, result }) => {
+							isSubmitting = false;
+							if (result.type === 'success') watcherEmail = '';
+							await update();
+						};
+					}}
+					class="flex items-center gap-2 pt-1"
+				>
+					<input type="hidden" name="ticket_id" value={ticket.id} />
+					<input
+						name="email"
+						type="email"
+						required
+						placeholder="name@company.com"
+						bind:value={watcherEmail}
+						class="h-8 flex-1 rounded-md border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-2 text-[12px]"
+					/>
+					<button type="submit" disabled={isSubmitting} class="nexus-secondary-button h-8 px-2.5 text-label-xs cursor-pointer">
+						Add
+					</button>
+				</form>
+			</div>
+
+			<!-- Attachments -->
+			<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-lowest)] p-4 space-y-3">
+				<span class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface)] flex items-center gap-1.5">
+					<span class="material-symbols-outlined text-[18px] text-[var(--color-primary)]">attach_file</span>
+					<span>Attachments</span>
+				</span>
+
+				{#if ticket.attachments && ticket.attachments.length > 0}
+					<ul class="space-y-1.5">
+						{#each ticket.attachments as att}
+							<li>
+								<a
+									href={`/attachments/${att.id}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="flex items-center gap-2 text-body-xs text-[var(--color-on-surface)] hover:text-[var(--color-primary)] hover:underline"
+								>
+									<span class="material-symbols-outlined text-[16px] text-[var(--color-primary)]">description</span>
+									<span class="truncate">{att.file_name}</span>
+								</a>
+							</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="text-body-xs text-[var(--color-outline)]">No files attached.</p>
+				{/if}
+
+				<form
+					method="POST"
+					action="?/attachFile"
+					enctype="multipart/form-data"
+					use:enhance={() => {
+						isAttaching = true;
+						return async ({ update }) => {
+							isAttaching = false;
+							await update();
+						};
+					}}
+				>
+					<input type="hidden" name="ticket_id" value={ticket.id} />
+					<label
+						class="inline-flex items-center gap-1.5 text-label-xs font-semibold text-[var(--color-primary)] hover:underline cursor-pointer {isAttaching ? 'opacity-50' : ''}"
+					>
+						<span class="material-symbols-outlined text-[16px]">upload</span>
+						<span>{isAttaching ? 'Uploading...' : 'Attach a file'}</span>
+						<input
+							type="file"
+							name="file"
+							class="hidden"
+							disabled={isAttaching}
+							onchange={(e) => (e.currentTarget.form as HTMLFormElement)?.requestSubmit()}
+						/>
+					</label>
+				</form>
+			</div>
+
 			<!-- Description & Notes -->
 			{#if ticket.description}
 				<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-low)] p-4 space-y-1.5">
@@ -514,6 +865,74 @@
 					</p>
 				</div>
 			{/if}
+
+			<!-- Conversation -->
+			<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-lowest)] p-4 space-y-3">
+				<span class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface)] flex items-center gap-1.5">
+					<span class="material-symbols-outlined text-[18px] text-[var(--color-primary)]">forum</span>
+					<span>Conversation</span>
+				</span>
+
+				{#if ticket.messages && ticket.messages.length > 0}
+					<div bind:this={messagesContainer} class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+						{#each ticket.messages as msg}
+							{@const isClient = msg.author?.role?.startsWith('client_')}
+							<div
+								class="rounded-lg border p-3 text-body-xs {isClient
+									? 'border-amber-200 bg-amber-50/60'
+									: 'border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-low)]'}"
+							>
+								<div class="flex items-center justify-between mb-1">
+									<span class="font-semibold text-[var(--color-on-surface)]">
+										{msg.author?.full_name ?? 'Unknown'}
+										<span class="ml-1 font-normal text-[10px] uppercase tracking-wide text-[var(--color-outline)]">
+											{isClient ? 'Client' : (msg.author?.role ?? '')}
+										</span>
+									</span>
+									<span class="text-[11px] text-[var(--color-outline)]">
+										{new Date(msg.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+									</span>
+								</div>
+								<p class="text-[var(--color-on-surface)] whitespace-pre-wrap">{msg.content}</p>
+							</div>
+						{/each}
+					</div>
+				{:else}
+					<p class="text-body-xs text-[var(--color-outline)]">No messages yet.</p>
+				{/if}
+
+				<form
+					method="POST"
+					action="?/reply"
+					use:enhance={() => {
+						isSubmitting = true;
+						return async ({ update }) => {
+							isSubmitting = false;
+							replyContent = '';
+							await update();
+						};
+					}}
+					class="space-y-2"
+				>
+					<input type="hidden" name="ticket_id" value={ticket.id} />
+					<textarea
+						name="content"
+						rows="2"
+						required
+						bind:value={replyContent}
+						placeholder="Reply to the client..."
+						class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3 py-2 text-body-xs outline-none focus:border-[var(--color-primary)]"
+					></textarea>
+					<button
+						type="submit"
+						disabled={isSubmitting || !replyContent.trim()}
+						class="nexus-primary-button h-8 px-3.5 text-label-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+					>
+						<span class="material-symbols-outlined text-[14px]">send</span>
+						<span>Send</span>
+					</button>
+				</form>
+			</div>
 
 			<!-- Audit Events Timeline -->
 			{#if ticket.events && ticket.events.length > 0}

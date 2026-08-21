@@ -11,8 +11,13 @@
 	let title = $state('');
 	let description = $state('');
 	let category = $state(initialType === 'enhancement' ? 'enhancement' : 'bug');
-	let projectId = $state(data.projects[0]?.id ?? '');
+	let projectId = $state('');
 	let priority = $state('medium');
+	$effect(() => {
+		if (!projectId && data.projects[0]?.id) {
+			projectId = data.projects[0].id;
+		}
+	});
 	let files = $state<Array<{ name: string; size: string; type: string }>>([]);
 	let ccEmailInput = $state('');
 	let ccRecipients = $state<Array<{ name: string; email: string }>>([]);
@@ -115,7 +120,11 @@
 					Ticket Submitted Successfully!
 				</h2>
 				<p class="mt-2 text-body-md text-[var(--color-on-surface-variant)]">
-					Your ticket <span class="font-bold text-[var(--color-primary)]">#{submittedTicket.id}</span> has been logged and assigned to our triage queue.
+					{#if submittedTicket.requiresApproval}
+						Your ticket <span class="font-bold text-[var(--color-primary)]">#{submittedTicket.id}</span> has been logged and sent to your admin for approval before it reaches our team.
+					{:else}
+						Your ticket <span class="font-bold text-[var(--color-primary)]">#{submittedTicket.id}</span> has been logged and assigned to our triage queue.
+					{/if}
 				</p>
 			</div>
 

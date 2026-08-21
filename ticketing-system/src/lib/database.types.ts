@@ -190,6 +190,7 @@ export type Database = {
           client_id: string
           code: string
           created_at: string
+          default_poc_id: string | null
           id: string
           name: string
           updated_at: string
@@ -198,6 +199,7 @@ export type Database = {
           client_id: string
           code: string
           created_at?: string
+          default_poc_id?: string | null
           id?: string
           name: string
           updated_at?: string
@@ -206,6 +208,7 @@ export type Database = {
           client_id?: string
           code?: string
           created_at?: string
+          default_poc_id?: string | null
           id?: string
           name?: string
           updated_at?: string
@@ -216,6 +219,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_default_poc_id_fkey"
+            columns: ["default_poc_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -285,6 +295,52 @@ export type Database = {
           },
         ]
       }
+      ticket_dependencies: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          depends_on_ticket_id: string
+          id: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          depends_on_ticket_id: string
+          id?: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          depends_on_ticket_id?: string
+          id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_dependencies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_dependencies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_dependencies_depends_on_ticket_id_fkey"
+            columns: ["depends_on_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_events: {
         Row: {
           actor_id: string | null
@@ -333,6 +389,39 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: false
             referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_message_reads: {
+        Row: {
+          last_read_at: string
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_message_reads_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_message_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -425,6 +514,10 @@ export type Database = {
       tickets: {
         Row: {
           actual_hours: number | null
+          admin_approved_at: string | null
+          admin_approved_by: string | null
+          admin_rejected_at: string | null
+          admin_rejection_reason: string | null
           ai_summary: Json | null
           category: Database["public"]["Enums"]["ticket_category"]
           client_approval_notes: string | null
@@ -446,14 +539,20 @@ export type Database = {
           raised_at: string
           raised_by: string | null
           requirement_completed_at: string | null
+          requires_admin_approval: boolean
           specialist_id: string | null
           status: Database["public"]["Enums"]["ticket_status"]
+          target_date: string | null
           title: string
           token: string | null
           updated_at: string
         }
         Insert: {
           actual_hours?: number | null
+          admin_approved_at?: string | null
+          admin_approved_by?: string | null
+          admin_rejected_at?: string | null
+          admin_rejection_reason?: string | null
           ai_summary?: Json | null
           category: Database["public"]["Enums"]["ticket_category"]
           client_approval_notes?: string | null
@@ -475,14 +574,20 @@ export type Database = {
           raised_at?: string
           raised_by?: string | null
           requirement_completed_at?: string | null
+          requires_admin_approval?: boolean
           specialist_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
+          target_date?: string | null
           title: string
           token?: string | null
           updated_at?: string
         }
         Update: {
           actual_hours?: number | null
+          admin_approved_at?: string | null
+          admin_approved_by?: string | null
+          admin_rejected_at?: string | null
+          admin_rejection_reason?: string | null
           ai_summary?: Json | null
           category?: Database["public"]["Enums"]["ticket_category"]
           client_approval_notes?: string | null
@@ -504,13 +609,22 @@ export type Database = {
           raised_at?: string
           raised_by?: string | null
           requirement_completed_at?: string | null
+          requires_admin_approval?: boolean
           specialist_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
+          target_date?: string | null
           title?: string
           token?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tickets_admin_approved_by_fkey"
+            columns: ["admin_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_client_id_fkey"
             columns: ["client_id"]

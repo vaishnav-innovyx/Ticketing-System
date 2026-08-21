@@ -43,6 +43,10 @@
 		specialist_profile?: ProfileItem | null;
 		delivery_lead_profile?: ProfileItem | null;
 		events?: TicketEvent[];
+		dependencies?: { id: string; depends_on: { id: string; token: string; title: string; status: string } }[];
+		watchers?: { id: string; email: string; full_name: string | null }[];
+		attachments?: { id: string; file_name: string; file_size_bytes: number | null; mime_type: string | null }[];
+		messages?: { id: string; content: string; created_at: string; author: { full_name: string | null; role: string } | null }[];
 		created_at: string;
 	}
 
@@ -57,9 +61,12 @@
 
 	let isCreateModalOpen = $state(false);
 	let isDetailModalOpen = $state(false);
-	let selectedTicket = $state<TicketItem | null>(null);
+	let selectedTicketId = $state<string | null>(null);
 
 	const tickets = $derived<TicketItem[]>(data.tickets || []);
+	const selectedTicket = $derived<TicketItem | null>(
+		selectedTicketId ? (tickets.find((t) => t.id === selectedTicketId) ?? null) : null
+	);
 	const clients = $derived(data.clients || []);
 	const projects = $derived(data.projects || []);
 	const internalStaff = $derived(data.internalStaff || []);
@@ -504,12 +511,12 @@
 						role="button"
 						tabindex="0"
 						onclick={() => {
-							selectedTicket = ticket;
+							selectedTicketId = ticket.id;
 							isDetailModalOpen = true;
 						}}
 						onkeydown={(e) => {
 							if (e.key === 'Enter' || e.key === ' ') {
-								selectedTicket = ticket;
+								selectedTicketId = ticket.id;
 								isDetailModalOpen = true;
 							}
 						}}
@@ -623,7 +630,7 @@
 									type="button"
 									class="text-left cursor-pointer"
 									onclick={() => {
-										selectedTicket = ticket;
+										selectedTicketId = ticket.id;
 										isDetailModalOpen = true;
 									}}
 								>
@@ -686,7 +693,7 @@
 									type="button"
 									class="nexus-secondary-button h-8 px-2.5 text-label-xs font-semibold cursor-pointer hover:border-[var(--color-primary)]"
 									onclick={() => {
-										selectedTicket = ticket;
+										selectedTicketId = ticket.id;
 										isDetailModalOpen = true;
 									}}
 								>
@@ -738,12 +745,12 @@
 								role="button"
 								tabindex="0"
 								onclick={() => {
-									selectedTicket = ticket;
+									selectedTicketId = ticket.id;
 									isDetailModalOpen = true;
 								}}
 								onkeydown={(e) => {
 									if (e.key === 'Enter' || e.key === ' ') {
-										selectedTicket = ticket;
+										selectedTicketId = ticket.id;
 										isDetailModalOpen = true;
 									}
 								}}
@@ -815,5 +822,9 @@
 		bind:open={isDetailModalOpen}
 		ticket={selectedTicket}
 		{internalStaff}
+		currentUserRole={data.profile?.role}
+		projectTickets={selectedTicket
+			? tickets.filter((t) => t.project_id === selectedTicket!.project_id && t.id !== selectedTicket!.id)
+			: []}
 	/>
 </div>

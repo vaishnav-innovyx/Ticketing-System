@@ -4,16 +4,18 @@
 
 	let {
 		children,
-		profile
+		profile,
+		pendingApprovalCount = 0
 	}: {
 		children: import('svelte').Snippet;
-		profile?: { full_name: string | null; email: string; clients: { name: string } | null };
+		profile?: { full_name: string | null; email: string; role?: string; clients: { name: string } | null };
+		pendingApprovalCount?: number;
 	} = $props();
 	let mobileNavOpen = $state(false);
 </script>
 
 <div class="flex min-h-screen flex-col bg-[var(--color-surface)]">
-	<ClientHeader {profile} onMenuClick={() => (mobileNavOpen = !mobileNavOpen)} />
+	<ClientHeader {profile} {pendingApprovalCount} onMenuClick={() => (mobileNavOpen = !mobileNavOpen)} />
 
 	<!-- Mobile Dropdown Menu -->
 	{#if mobileNavOpen}
@@ -28,10 +30,15 @@
 				</a>
 				<a
 					href="/portal/my-tickets"
-					class="rounded-lg p-2 text-label-lg font-medium text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)]"
+					class="flex items-center gap-2 rounded-lg p-2 text-label-lg font-medium text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)]"
 					onclick={() => (mobileNavOpen = false)}
 				>
-					My Tickets
+					<span>My Tickets</span>
+					{#if pendingApprovalCount > 0}
+						<span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-white">
+							{pendingApprovalCount}
+						</span>
+					{/if}
 				</a>
 				<a
 					href="/portal/submit"

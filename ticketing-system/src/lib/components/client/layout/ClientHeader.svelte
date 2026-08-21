@@ -3,10 +3,12 @@
 
 	let {
 		onMenuClick,
-		profile
+		profile,
+		pendingApprovalCount = 0
 	}: {
 		onMenuClick?: () => void;
-		profile?: { full_name: string | null; email: string; clients: { name: string } | null };
+		profile?: { full_name: string | null; email: string; role?: string; clients: { name: string } | null };
+		pendingApprovalCount?: number;
 	} = $props();
 
 	const displayName = $derived(profile?.full_name || profile?.email || '');
@@ -20,11 +22,13 @@
 			.toUpperCase()
 	);
 
-	const navItems = [
-		{ label: 'Support Center', href: '/portal' },
-		{ label: 'My Tickets', href: '/portal/my-tickets' },
-		{ label: 'Raise a Ticket', href: '/portal/submit' }
-	];
+	const navItems = $derived([
+		{ label: 'Support Center', href: '/portal', badge: 0 },
+		{ label: 'My Tickets', href: '/portal/my-tickets', badge: pendingApprovalCount },
+		{ label: 'Raise a Ticket', href: '/portal/submit', badge: 0 },
+		{ label: 'Notifications', href: '/portal/notifications', badge: 0 },
+		...(profile?.role === 'client_admin' ? [{ label: 'Team', href: '/portal/team', badge: 0 }] : [])
+	]);
 </script>
 
 <header
@@ -55,11 +59,16 @@
 						: page.url.pathname.startsWith(item.href)}
 				<a
 					href={item.href}
-					class="rounded-lg px-3.5 py-1.5 text-label-md font-medium transition-colors {isActive
+					class="flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-label-md font-medium transition-colors {isActive
 						? 'bg-[var(--color-surface-container)] text-[var(--color-primary)] font-semibold'
 						: 'text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-low)] hover:text-[var(--color-on-surface)]'}"
 				>
-					{item.label}
+					<span>{item.label}</span>
+					{#if item.badge > 0}
+						<span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[11px] font-bold text-white">
+							{item.badge}
+						</span>
+					{/if}
 				</a>
 			{/each}
 		</nav>

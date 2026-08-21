@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CreateProjectModal from '$lib/components/internal/projects/CreateProjectModal.svelte';
+	import EditProjectModal from '$lib/components/internal/projects/EditProjectModal.svelte';
 
 	interface ProjectItem {
 		id: string;
@@ -11,6 +12,8 @@
 		ticket_count?: number;
 		active_ticket_count?: number;
 		member_count?: number;
+		default_poc_id?: string | null;
+		team?: { id: string; full_name: string | null; email: string; role: string }[];
 	}
 
 	let { data } = $props();
@@ -18,9 +21,15 @@
 	let searchQuery = $state('');
 	let selectedClientFilter = $state('all');
 	let isCreateModalOpen = $state(false);
+	let isEditModalOpen = $state(false);
+	let selectedProjectId = $state<string | null>(null);
 
 	const projects = $derived<ProjectItem[]>(data.projects || []);
 	const clients = $derived(data.clients || []);
+	const internalStaff = $derived(data.internalStaff || []);
+	const selectedProject = $derived<ProjectItem | null>(
+		selectedProjectId ? (projects.find((p) => p.id === selectedProjectId) ?? null) : null
+	);
 
 	const filteredProjects = $derived(
 		projects.filter((p) => {
@@ -223,8 +232,18 @@
 						</div>
 					</div>
 
+					<!-- Team -->
+					<div class="mt-3 flex items-center gap-1.5 text-[12px] text-[var(--color-on-surface-variant)]">
+						<span class="material-symbols-outlined text-[15px] text-[var(--color-outline)]">groups</span>
+						{#if project.team && project.team.length > 0}
+							<span>{project.team.length} team member{project.team.length === 1 ? '' : 's'}</span>
+						{:else}
+							<span>No specialists assigned</span>
+						{/if}
+					</div>
+
 					<!-- Metrics & Footer -->
-					<div class="mt-6 pt-4 border-t border-[var(--color-outline-variant)]/40 flex items-center justify-between text-[12px]">
+					<div class="mt-3 pt-4 border-t border-[var(--color-outline-variant)]/40 flex items-center justify-between text-[12px]">
 						<div class="flex items-center gap-3">
 							<span class="flex items-center gap-1 text-[var(--color-on-surface-variant)]">
 								<span class="material-symbols-outlined text-[15px] text-amber-600">pending_actions</span>
@@ -237,12 +256,17 @@
 							</span>
 						</div>
 
-						<a
-							href="/clients"
-							class="text-label-xs font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-0.5"
+						<button
+							type="button"
+							class="text-label-xs font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-0.5 cursor-pointer"
+							onclick={() => {
+								selectedProjectId = project.id;
+								isEditModalOpen = true;
+							}}
 						>
-							<span>Client &rarr;</span>
-						</a>
+							<span class="material-symbols-outlined text-[14px]">manage_accounts</span>
+							<span>Manage</span>
+						</button>
 					</div>
 				</div>
 			{/each}
@@ -253,5 +277,13 @@
 	<CreateProjectModal
 		bind:open={isCreateModalOpen}
 		{clients}
+		{internalStaff}
+	/>
+
+	<!-- Edit Project Modal -->
+	<EditProjectModal
+		bind:open={isEditModalOpen}
+		project={selectedProject}
+		{internalStaff}
 	/>
 </div>

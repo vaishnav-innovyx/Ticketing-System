@@ -52,6 +52,32 @@
 		</p>
 	</section>
 
+	<!-- Pending Approval Banner (client_admin only) -->
+	{#if data.pendingApprovalTickets && data.pendingApprovalTickets.length > 0}
+		<section class="rounded-xl border-2 border-amber-300 bg-amber-50/50 p-5 shadow-xs space-y-3">
+			<h2 class="text-base font-bold text-[var(--color-on-surface)] flex items-center gap-1.5">
+				<span class="material-symbols-outlined text-[20px] text-amber-600">hourglass_top</span>
+				<span>{data.pendingApprovalTickets.length} ticket{data.pendingApprovalTickets.length === 1 ? '' : 's'} waiting on your approval</span>
+			</h2>
+			<div class="space-y-2">
+				{#each data.pendingApprovalTickets as t}
+					<a
+						href="/portal/my-tickets/{t.token}"
+						class="flex items-center justify-between rounded-lg bg-white border border-amber-200 px-3.5 py-2.5 hover:border-amber-400 transition-colors"
+					>
+						<div class="min-w-0">
+							<span class="font-mono font-semibold text-[var(--color-primary)] mr-2">{t.token}</span>
+							<span class="text-body-sm text-[var(--color-on-surface)]">{t.title}</span>
+						</div>
+						<span class="text-[11px] text-[var(--color-on-surface-variant)] whitespace-nowrap ml-3">
+							by {t.raiser?.full_name ?? 'Unknown'}
+						</span>
+					</a>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
 	<!-- Primary Action Cards (Raise a Ticket & My Tickets) -->
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 		<!-- Card 1: Raise a Ticket -->

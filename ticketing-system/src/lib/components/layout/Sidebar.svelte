@@ -3,13 +3,15 @@
 
 	let {
 		profile,
+		unreadMessageCount = 0,
 		onClose
 	}: {
 		profile?: { id: string; full_name: string | null; email: string; role: string } | null;
+		unreadMessageCount?: number;
 		onClose?: () => void;
 	} = $props();
 
-	const navigation = [
+	const navigation = $derived([
 		{
 			label: 'Dashboard',
 			href: '/',
@@ -20,6 +22,12 @@
 			href: '/tickets',
 			icon: 'confirmation_number',
 			badge: 24
+		},
+		{
+			label: 'Communication',
+			href: '/communications',
+			icon: 'forum',
+			badge: unreadMessageCount > 0 ? unreadMessageCount : undefined
 		},
 		{
 			label: 'Clients',
@@ -42,11 +50,16 @@
 			icon: 'badge'
 		},
 		{
+			label: 'Notifications',
+			href: '/notifications',
+			icon: 'notifications'
+		},
+		{
 			label: 'Reports',
 			href: '/reports',
 			icon: 'bar_chart'
 		}
-	];
+	]);
 </script>
 
 <aside

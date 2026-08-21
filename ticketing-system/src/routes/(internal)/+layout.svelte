@@ -5,7 +5,7 @@
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 </script>
 
-<AppShell profile={data.profile}>
+<AppShell profile={data.profile} unreadMessageCount={data.unreadMessageCount}>
 	{@render children()}
 </AppShell>
 

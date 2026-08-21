@@ -196,6 +196,17 @@ export const actions: Actions = {
 		const clientId = String(formData.get('client_id') || profile.client_id || '').trim();
 		const name = String(formData.get('name') || '').trim();
 		const code = String(formData.get('code') || '').trim().toUpperCase();
+		const teamMemberIds = formData.getAll('team_member_ids').map(String).filter(Boolean);
+		const defaultPocIdRaw = String(formData.get('default_poc_id') || '').trim() || null;
+		let defaultPocId: string | null = null;
+		if (defaultPocIdRaw) {
+			if (teamMemberIds.includes(defaultPocIdRaw)) {
+				defaultPocId = defaultPocIdRaw;
+			} else {
+				const { data: pocProfile } = await supabaseAdmin.from('profiles').select('role').eq('id', defaultPocIdRaw).single();
+				defaultPocId = pocProfile?.role === 'super_admin' ? defaultPocIdRaw : null;
+			}
+		}
 
 		if (!clientId || !name || !code) {
 			return fail(400, { error: 'Client, project name, and project code are required.', clientId, name, code });
@@ -207,7 +218,8 @@ export const actions: Actions = {
 			.insert({
 				client_id: clientId,
 				name,
-				code
+				code,
+				default_poc_id: defaultPocId
 			})
 			.select('id, code, name, client_id, created_at')
 			.single();
@@ -222,6 +234,12 @@ export const actions: Actions = {
 				});
 			}
 			return fail(500, { error: projectError.message, clientId, name, code });
+		}
+
+		if (teamMemberIds.length > 0) {
+			await supabaseAdmin
+				.from('project_members')
+				.insert(teamMemberIds.map((userId) => ({ project_id: newProject.id, user_id: userId })));
 		}
 
 		return { success: true, createdProjectId: newProject.id };

@@ -9,6 +9,6 @@
 	<title>Nexus Client Portal - Help Center</title>
 </svelte:head>
 
-<ClientAppShell profile={data.profile}>
+<ClientAppShell profile={data.profile} pendingApprovalCount={data.pendingApprovalCount}>
 	{@render children()}
 </ClientAppShell>

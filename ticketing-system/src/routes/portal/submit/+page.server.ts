@@ -1,21 +1,49 @@
 import { fail } from '@sveltejs/kit';
+import { supabaseAdmin } from '$lib/server/supabase';
 import { PRIORITY_LABEL, type TicketDbPriority } from '$lib/portal/ticketDisplay';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
-	const { data: memberships } = await supabase.from('project_members').select('projects(id, name)');
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
+	const { user } = await safeGetSession();
+	if (!user) return { projects: [] };
 
-	const projects = (memberships ?? [])
-		.map((m) => m.projects)
-		.filter((p): p is { id: string; name: string } => !!p);
+	const { data: profile } = await supabase
+		.from('profiles')
+		.select('role, client_id')
+		.eq('id', user.id)
+		.single();
 
-	return { projects };
+	// If the user belongs to a client, fetch that client's projects
+	if (profile?.client_id) {
+		const { data: projects } = await supabaseAdmin
+			.from('projects')
+			.select('id, name, code, client_id')
+			.eq('client_id', profile.client_id)
+			.order('name');
+
+		return { projects: projects ?? [] };
+	}
+
+	// For internal staff / super admin testing the portal, fetch all projects
+	const { data: projects } = await supabaseAdmin
+		.from('projects')
+		.select('id, name, code, client_id')
+		.order('name');
+
+	return { projects: projects ?? [] };
 };
+
+const TICKET_RAISER_ROLES = ['super_admin', 'poc', 'specialist', 'delivery_lead', 'client_raiser'];
 
 export const actions: Actions = {
 	default: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Not signed in.' });
+
+		const { data: profile } = await supabase.from('profiles').select('id, client_id, role').eq('id', user.id).single();
+		if (!profile || !TICKET_RAISER_ROLES.includes(profile.role)) {
+			return fail(403, { error: 'Your account does not have permission to raise tickets.' });
+		}
 
 		const formData = await request.formData();
 		const title = String(formData.get('title') || '').trim();
@@ -30,34 +58,56 @@ export const actions: Actions = {
 			return fail(400, { error: 'Title, description, and application are required.' });
 		}
 
-		const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
-		if (!profile?.client_id) return fail(400, { error: 'No client associated with this account.' });
+		// Determine client_id: use user's client_id, or look up from the selected project (for internal staff/admin)
+		let clientId = profile?.client_id;
+		if (!clientId) {
+			const { data: proj } = await supabaseAdmin
+				.from('projects')
+				.select('client_id')
+				.eq('id', projectId)
+				.single();
+			clientId = proj?.client_id ?? null;
+		}
 
-		const { data: ticket, error: insertError } = await supabase
+		if (!clientId) {
+			return fail(400, { error: 'No client associated with this project or account.' });
+		}
+
+		const { data: projectRow } = await supabaseAdmin.from('projects').select('default_poc_id').eq('id', projectId).single();
+
+		const { data: ticket, error: insertError } = await supabaseAdmin
 			.from('tickets')
 			.insert({
-				client_id: profile.client_id,
+				client_id: clientId,
 				project_id: projectId,
 				category: category as never,
 				priority: priority as never,
 				title,
 				description,
-				raised_by: user.id
+				raised_by: user.id,
+				poc_id: projectRow?.default_poc_id ?? undefined,
+				requires_admin_approval: profile.role === 'client_raiser'
 			})
 			.select('id, token, title, priority, projects(name)')
 			.single();
 
-		if (insertError || !ticket) return fail(500, { error: insertError?.message ?? 'Failed to create ticket.' });
+		if (insertError || !ticket) {
+			return fail(500, { error: insertError?.message ?? 'Failed to create ticket.' });
+		}
 
 		if (ccEmails.length > 0) {
-			await supabase.from('ticket_watchers').insert(ccEmails.map((email) => ({ ticket_id: ticket.id, email })));
+			await supabaseAdmin
+				.from('ticket_watchers')
+				.insert(ccEmails.map((email) => ({ ticket_id: ticket.id, email })));
 		}
 
 		for (const file of files) {
 			const path = `${ticket.id}/${crypto.randomUUID()}-${file.name}`;
-			const { error: uploadError } = await supabase.storage.from('ticket-attachments').upload(path, file);
+			const { error: uploadError } = await supabase.storage
+				.from('ticket-attachments')
+				.upload(path, file);
 			if (!uploadError) {
-				await supabase.from('ticket_attachments').insert({
+				await supabaseAdmin.from('ticket_attachments').insert({
 					ticket_id: ticket.id,
 					uploaded_by: user.id,
 					file_name: file.name,
@@ -73,9 +123,10 @@ export const actions: Actions = {
 			ticket: {
 				id: ticket.token ?? ticket.id,
 				title: ticket.title,
-				priority: PRIORITY_LABEL[ticket.priority as TicketDbPriority],
-				application: ticket.projects?.name ?? '',
-				ccRecipients: ccEmails
+				priority: (ticket.priority ? PRIORITY_LABEL[ticket.priority as TicketDbPriority] : null) ?? ticket.priority,
+				application: (ticket.projects as { name?: string } | null)?.name ?? '',
+				ccRecipients: ccEmails,
+				requiresApproval: profile.role === 'client_raiser'
 			}
 		};
 	}

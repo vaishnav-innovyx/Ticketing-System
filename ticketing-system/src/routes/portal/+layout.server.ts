@@ -19,5 +19,16 @@ export const load: LayoutServerLoad = async ({ locals: { supabase, safeGetSessio
 		throw redirect(303, '/login');
 	}
 
-	return { profile };
+	let pendingApprovalCount = 0;
+	if (profile.role === 'client_admin') {
+		const { count } = await supabase
+			.from('tickets')
+			.select('id', { count: 'exact', head: true })
+			.eq('requires_admin_approval', true)
+			.is('admin_approved_at', null)
+			.is('admin_rejected_at', null);
+		pendingApprovalCount = count ?? 0;
+	}
+
+	return { profile, pendingApprovalCount };
 };
