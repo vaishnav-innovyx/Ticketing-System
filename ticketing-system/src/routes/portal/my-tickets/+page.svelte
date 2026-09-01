@@ -29,7 +29,7 @@
 	const totalCount = $derived(tickets.length);
 	const openCount = $derived(tickets.filter((t) => t.status !== 'Resolved').length);
 	const awaitingCount = $derived(
-		tickets.filter((t) => t.status === 'Awaiting Your Response' || t.status === 'Awaiting Client').length
+		tickets.filter((t) => t.status === 'Awaiting Client Approval' || t.status === 'Awaiting Client' || t.status === 'Awaiting Your Response').length
 	);
 	const resolvedCount = $derived(tickets.filter((t) => t.status === 'Resolved').length);
 
@@ -46,7 +46,7 @@
 				(statusFilter === 'Open' && t.status !== 'Resolved') ||
 				(statusFilter === 'Resolved' && t.status === 'Resolved') ||
 				(statusFilter === 'Awaiting Response' &&
-					(t.status === 'Awaiting Your Response' || t.status === 'Awaiting Client'));
+					(t.status === 'Awaiting Client Approval' || t.status === 'Awaiting Client' || t.status === 'Awaiting Your Response'));
 
 			const matchesType = typeFilter === 'All' || t.category === typeFilter;
 			const matchesApp = appFilter === 'All' || t.application === appFilter;
@@ -110,7 +110,7 @@
 		<div class="rounded-xl border-2 border-[var(--color-primary)]/40 bg-[var(--color-primary-fixed)]/15 p-5 shadow-xs flex flex-col justify-between relative">
 			<div class="absolute top-4 right-4 h-2.5 w-2.5 rounded-full bg-[var(--color-error)] shadow-xs animate-pulse"></div>
 			<span class="text-label-sm font-bold uppercase tracking-wider text-[var(--color-primary)]">
-				Awaiting Your Response
+				Awaiting Client Approval
 			</span>
 			<span class="text-3xl font-bold text-[var(--color-on-surface)] mt-2">{awaitingCount}</span>
 		</div>
@@ -140,17 +140,17 @@
 		<div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
 			<select
 				bind:value={statusFilter}
-				class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] py-2 pl-3 pr-8 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] cursor-pointer"
+				class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] py-2 px-3 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]"
 			>
 				<option value="All">All Statuses</option>
 				<option value="Open">Open</option>
-				<option value="Awaiting Response">Awaiting Response</option>
+				<option value="Awaiting Client Approval">Awaiting Client Approval</option>
 				<option value="Resolved">Resolved</option>
 			</select>
 
 			<select
 				bind:value={typeFilter}
-				class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] py-2 pl-3 pr-8 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] cursor-pointer hidden sm:block"
+				class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] py-2 px-3 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]"
 			>
 				<option value="All">All Types</option>
 				<option value="Bug">Bug</option>
@@ -159,47 +159,41 @@
 				<option value="Training">Training</option>
 			</select>
 
-			<select
-				bind:value={appFilter}
-				class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] py-2 pl-3 pr-8 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] cursor-pointer hidden md:block"
-			>
-				<option value="All">All Applications</option>
-				{#each applicationOptions as app}
-					<option value={app}>{app}</option>
-				{/each}
-			</select>
+			{#if applicationOptions.length > 0}
+				<select
+					bind:value={appFilter}
+					class="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] py-2 px-3 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]"
+				>
+					<option value="All">All Applications</option>
+					{#each applicationOptions as app}
+						<option value={app}>{app}</option>
+					{/each}
+				</select>
+			{/if}
 
-			<button
-				type="button"
-				onclick={clearFilters}
-				class="text-label-md font-medium text-[var(--color-on-surface-variant)] px-3 py-2 rounded-lg hover:bg-[var(--color-surface-container)] hover:text-[var(--color-on-surface)] transition-colors ml-auto lg:ml-2 cursor-pointer"
-			>
-				Clear Filters
-			</button>
+			{#if searchQuery || statusFilter !== 'All' || typeFilter !== 'All' || appFilter !== 'All'}
+				<button
+					type="button"
+					onclick={clearFilters}
+					class="text-label-md text-[var(--color-primary)] hover:underline px-2 py-1 cursor-pointer"
+				>
+					Clear Filters
+				</button>
+			{/if}
 		</div>
 	</div>
 
-	<!-- Tickets Data Table -->
+	<!-- Ticket List Table -->
 	<div class="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] shadow-xs overflow-hidden">
 		<div class="overflow-x-auto">
 			<table class="w-full text-left border-collapse">
 				<thead>
-					<tr class="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-container-low)]/50">
-						<th class="py-3.5 px-4 text-label-sm font-semibold uppercase tracking-wider text-[var(--color-outline)] w-28">
-							Ticket
-						</th>
-						<th class="py-3.5 px-4 text-label-sm font-semibold uppercase tracking-wider text-[var(--color-outline)] min-w-[280px]">
-							Request Type / Summary
-						</th>
-						<th class="py-3.5 px-4 text-label-sm font-semibold uppercase tracking-wider text-[var(--color-outline)] whitespace-nowrap">
-							Application
-						</th>
-						<th class="py-3.5 px-4 text-label-sm font-semibold uppercase tracking-wider text-[var(--color-outline)] whitespace-nowrap">
-							Status
-						</th>
-						<th class="py-3.5 px-4 text-label-sm font-semibold uppercase tracking-wider text-[var(--color-outline)] text-right whitespace-nowrap">
-							Last Updated
-						</th>
+					<tr class="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-container-low)]/50 text-label-xs font-bold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+						<th class="py-3.5 px-4">Ticket</th>
+						<th class="py-3.5 px-4">Subject</th>
+						<th class="py-3.5 px-4">Application</th>
+						<th class="py-3.5 px-4">Status</th>
+						<th class="py-3.5 px-4 text-right">Last Updated</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-[var(--color-border-subtle)] text-body-sm">
@@ -207,20 +201,17 @@
 						<tr>
 							<td colspan="5" class="py-12 text-center text-[var(--color-on-surface-variant)]">
 								<span class="material-symbols-outlined text-4xl text-[var(--color-outline)] mb-2">inbox</span>
-								<p class="text-body-md font-medium">No tickets match your filters</p>
-								<button onclick={clearFilters} class="mt-2 text-label-md font-semibold text-[var(--color-primary)] hover:underline">
-									Reset all filters
-								</button>
+								<p>No tickets match your filters.</p>
 							</td>
 						</tr>
 					{:else}
 						{#each filteredTickets as ticket}
 							<tr
-								class="hover:bg-[var(--color-surface-container-low)]/70 transition-colors cursor-pointer group {ticket.status === 'Awaiting Your Response' ? 'bg-[var(--color-primary-fixed)]/10' : ''}"
+								class="hover:bg-[var(--color-surface-container-low)]/70 transition-colors cursor-pointer group {ticket.status === 'Awaiting Client Approval' || ticket.status === 'Awaiting Your Response' ? 'bg-[var(--color-primary-fixed)]/10' : ''}"
 								onclick={() => (window.location.href = `/portal/my-tickets/${ticket.id}`)}
 							>
 								<td class="py-4 px-4 font-bold text-[var(--color-primary)] group-hover:underline relative">
-									{#if ticket.status === 'Awaiting Your Response'}
+									{#if ticket.status === 'Awaiting Client Approval' || ticket.status === 'Awaiting Your Response'}
 										<div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]"></div>
 									{/if}
 									{ticket.id}
@@ -255,10 +246,10 @@
 										<span class="inline-flex items-center px-2.5 py-1 rounded bg-[var(--color-primary-fixed)]/40 text-[var(--color-on-primary-fixed-variant)] font-bold text-[11px] uppercase tracking-wider">
 											IN DEVELOPMENT
 										</span>
-									{:else if ticket.status === 'Awaiting Your Response' || ticket.status === 'Awaiting Client'}
+									{:else if ticket.status === 'Awaiting Client Approval' || ticket.status === 'Awaiting Your Response' || ticket.status === 'Awaiting Client'}
 										<div class="flex items-center gap-1.5">
 											<span class="inline-flex items-center px-2.5 py-1 rounded bg-[#FFF4E5] text-[#ED6C02] border border-[#FFE0B2] font-bold text-[11px] uppercase tracking-wider">
-												AWAITING YOUR RESPONSE
+												AWAITING CLIENT APPROVAL
 											</span>
 											<span class="material-symbols-outlined text-[var(--color-error)] text-[16px]">error</span>
 										</div>

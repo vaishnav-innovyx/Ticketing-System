@@ -57,7 +57,7 @@
 	let selectedCategoryFilter = $state('all');
 	let selectedPriorityFilter = $state('all');
 	let selectedClientFilter = $state('all');
-	let viewMode = $state<'table' | 'grid' | 'kanban'>('grid');
+	let viewMode = $state<'table' | 'grid' | 'kanban'>('kanban');
 
 	let isCreateModalOpen = $state(false);
 	let isDetailModalOpen = $state(false);
@@ -196,7 +196,7 @@
 	<title>Tickets - Nexus Service Desk</title>
 </svelte:head>
 
-<div class="space-y-6 md:space-y-8">
+<div class="space-y-6 md:space-y-8 min-w-0 w-full">
 	<!-- Page Header -->
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 		<div>
@@ -717,96 +717,98 @@
 
 	{:else}
 		<!-- Refined Kanban Board View -->
-		<div class="flex gap-4 overflow-x-auto pb-4">
-			{#each kanbanStages as stage}
-				{@const stageTickets = filteredTickets.filter((t) => t.status === stage.key)}
-				<div class="flex-1 min-w-[300px] max-w-sm rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-low)]/40 p-4 flex flex-col border-t-4 {stage.border} shadow-2xs">
-					<!-- Column Header -->
-					<div class="flex items-center justify-between pb-3.5 border-b border-[var(--color-outline-variant)]/40 mb-3.5">
-						<div class="flex items-center gap-2">
-							<span class="material-symbols-outlined text-[18px] text-[var(--color-primary)]">{stage.icon}</span>
-							<span class="text-label-sm font-bold text-[var(--color-on-surface)]">
-								{stage.label}
+		<div class="w-full min-w-0 overflow-x-auto pb-4 pt-1 rounded-2xl">
+			<div class="flex gap-4 min-w-max pb-2">
+				{#each kanbanStages as stage}
+					{@const stageTickets = filteredTickets.filter((t) => t.status === stage.key)}
+					<div class="w-[310px] shrink-0 rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-low)]/40 p-4 flex flex-col border-t-4 {stage.border} shadow-2xs">
+						<!-- Column Header -->
+						<div class="flex items-center justify-between pb-3.5 border-b border-[var(--color-outline-variant)]/40 mb-3.5">
+							<div class="flex items-center gap-2">
+								<span class="material-symbols-outlined text-[18px] text-[var(--color-primary)]">{stage.icon}</span>
+								<span class="text-label-sm font-bold text-[var(--color-on-surface)]">
+									{stage.label}
+								</span>
+							</div>
+							<span class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-surface-container-high)] text-label-xs font-bold text-[var(--color-on-surface-variant)]">
+								{stageTickets.length}
 							</span>
 						</div>
-						<span class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-surface-container-high)] text-label-xs font-bold text-[var(--color-on-surface-variant)]">
-							{stageTickets.length}
-						</span>
-					</div>
 
-					<!-- Cards List -->
-					<div class="space-y-3 flex-1 overflow-y-auto max-h-[calc(100vh-360px)] pr-1">
-						{#each stageTickets as ticket}
-							{@const priorityInfo = getPriorityBadge(ticket.priority)}
-							{@const categoryInfo = getCategoryInfo(ticket.category)}
+						<!-- Cards List -->
+						<div class="space-y-3 flex-1 overflow-y-auto max-h-[calc(100vh-360px)] pr-1">
+							{#each stageTickets as ticket}
+								{@const priorityInfo = getPriorityBadge(ticket.priority)}
+								{@const categoryInfo = getCategoryInfo(ticket.category)}
 
-							<div
-								class="w-full text-left rounded-xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] p-4 shadow-xs hover:border-[var(--color-primary)] hover:shadow-md transition-all cursor-pointer group"
-								role="button"
-								tabindex="0"
-								onclick={() => {
-									selectedTicketId = ticket.id;
-									isDetailModalOpen = true;
-								}}
-								onkeydown={(e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
+								<div
+									class="w-full text-left rounded-xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] p-4 shadow-xs hover:border-[var(--color-primary)] hover:shadow-md transition-all cursor-pointer group"
+									role="button"
+									tabindex="0"
+									onclick={() => {
 										selectedTicketId = ticket.id;
 										isDetailModalOpen = true;
-									}
-								}}
-							>
-								<!-- Token & Priority -->
-								<div class="flex items-center justify-between text-[11px]">
-									<span class="font-mono font-bold text-[var(--color-primary)]">
-										{ticket.token || 'TICKET'}
-									</span>
-									<span class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold border {priorityInfo.class}">
-										<span class="h-1.5 w-1.5 rounded-full {priorityInfo.dot}"></span>
-										<span>{PRIORITY_LABEL[ticket.priority]}</span>
-									</span>
-								</div>
-
-								<!-- Title -->
-								<h4 class="mt-2 text-body-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-2 leading-snug">
-									{ticket.title}
-								</h4>
-
-								<!-- Category & Workspace Pills -->
-								<div class="mt-3 flex flex-wrap items-center gap-1.5">
-									<span class="inline-flex items-center gap-1 rounded bg-[var(--color-surface-container)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-on-surface-variant)]">
-										<span class="material-symbols-outlined text-[12px]">{categoryInfo.icon}</span>
-										<span>{categoryInfo.label}</span>
-									</span>
-
-									<span class="inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--color-primary)]">
-										{ticket.project?.code ?? ''}
-									</span>
-								</div>
-
-								<!-- Hours & Client Footer -->
-								<div class="mt-3 pt-2.5 border-t border-[var(--color-outline-variant)]/40 flex items-center justify-between text-[11px] text-[var(--color-outline)]">
-									<span class="font-medium text-[var(--color-on-surface-variant)] truncate max-w-[120px]">
-										{ticket.client?.name ?? 'Client'}
-									</span>
-
-									{#if ticket.estimated_hours !== null || ticket.actual_hours !== null}
-										<span class="font-mono text-[11px] text-[var(--color-on-surface)] font-semibold flex items-center gap-1">
-											<span class="material-symbols-outlined text-[13px] text-amber-600">timer</span>
-											<span>{ticket.actual_hours ?? 0}h / {ticket.estimated_hours ?? '-'}h</span>
+									}}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											selectedTicketId = ticket.id;
+											isDetailModalOpen = true;
+										}
+									}}
+								>
+									<!-- Token & Priority -->
+									<div class="flex items-center justify-between text-[11px]">
+										<span class="font-mono font-bold text-[var(--color-primary)]">
+											{ticket.token || 'TICKET'}
 										</span>
-									{/if}
-								</div>
-							</div>
-						{/each}
+										<span class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold border {priorityInfo.class}">
+											<span class="h-1.5 w-1.5 rounded-full {priorityInfo.dot}"></span>
+											<span>{PRIORITY_LABEL[ticket.priority]}</span>
+										</span>
+									</div>
 
-						{#if stageTickets.length === 0}
-							<div class="rounded-xl border border-dashed border-[var(--color-outline-variant)]/50 p-6 text-center text-[var(--color-outline)] text-[12px]">
-								No tickets in this stage
-							</div>
-						{/if}
+									<!-- Title -->
+									<h4 class="mt-2 text-body-sm font-bold text-[var(--color-on-surface)] group-hover:text-[var(--color-primary)] transition-colors line-clamp-2 leading-snug">
+										{ticket.title}
+									</h4>
+
+									<!-- Category & Workspace Pills -->
+									<div class="mt-3 flex flex-wrap items-center gap-1.5">
+										<span class="inline-flex items-center gap-1 rounded bg-[var(--color-surface-container)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-on-surface-variant)]">
+											<span class="material-symbols-outlined text-[12px]">{categoryInfo.icon}</span>
+											<span>{categoryInfo.label}</span>
+										</span>
+
+										<span class="inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--color-primary)]">
+											{ticket.project?.code ?? ''}
+										</span>
+									</div>
+
+									<!-- Hours & Client Footer -->
+									<div class="mt-3 pt-2.5 border-t border-[var(--color-outline-variant)]/40 flex items-center justify-between text-[11px] text-[var(--color-outline)]">
+										<span class="font-medium text-[var(--color-on-surface-variant)] truncate max-w-[120px]">
+											{ticket.client?.name ?? 'Client'}
+										</span>
+
+										{#if ticket.estimated_hours !== null || ticket.actual_hours !== null}
+											<span class="font-mono text-[11px] text-[var(--color-on-surface)] font-semibold flex items-center gap-1">
+												<span class="material-symbols-outlined text-[13px] text-amber-600">timer</span>
+												<span>{ticket.actual_hours ?? 0}h / {ticket.estimated_hours ?? '-'}h</span>
+											</span>
+										{/if}
+									</div>
+								</div>
+							{/each}
+
+							{#if stageTickets.length === 0}
+								<div class="rounded-xl border border-dashed border-[var(--color-outline-variant)]/50 p-6 text-center text-[var(--color-outline)] text-[12px]">
+									No tickets in this stage
+								</div>
+							{/if}
+						</div>
 					</div>
-				</div>
-			{/each}
+				{/each}
+			</div>
 		</div>
 	{/if}
 

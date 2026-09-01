@@ -41,11 +41,11 @@
 	</div>
 
 	<!-- Main Content Area -->
-	<div class="flex flex-1 flex-col md:pl-[260px]">
+	<div class="flex flex-1 flex-col min-w-0 md:pl-[260px]">
 		<Header {profile} onMenuClick={() => (mobileMenuOpen = true)} />
 
-		<main class="flex-1 p-4 sm:p-6 md:p-8">
-			<div class="mx-auto w-full max-w-[1440px]">
+		<main class="flex-1 min-w-0 w-full p-4 sm:p-6 md:p-8">
+			<div class="mx-auto w-full min-w-0 max-w-[1440px]">
 				{@render children()}
 			</div>
 		</main>

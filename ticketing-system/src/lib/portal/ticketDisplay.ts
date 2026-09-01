@@ -9,7 +9,7 @@ export const STATUS_LABEL: Record<TicketStatus, string> = {
 	raised: 'Open',
 	poc_triage: 'Triaged',
 	requirement_estimation: 'In Progress',
-	client_approval: 'Awaiting Your Response',
+	client_approval: 'Awaiting Client Approval',
 	development: 'In Development',
 	delivery: 'Awaiting Client',
 	closed: 'Resolved'

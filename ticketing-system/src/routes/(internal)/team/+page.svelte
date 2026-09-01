@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CreateUserModal from '$lib/components/internal/users/CreateUserModal.svelte';
+	import BulkUploadUsersModal from '$lib/components/internal/users/BulkUploadUsersModal.svelte';
 	import EditUserModal from '$lib/components/internal/users/EditUserModal.svelte';
 	import UserDetailModal from '$lib/components/internal/users/UserDetailModal.svelte';
 	import { roleLabel } from '$lib/portal/ticketDisplay';
@@ -28,6 +29,7 @@
 	let selectedRoleFilter = $state('all');
 	let selectedClientFilter = $state('all');
 	let isCreateModalOpen = $state(false);
+	let isBulkModalOpen = $state(false);
 	let selectedUser = $state<MemberItem | null>(null);
 	let isDetailModalOpen = $state(false);
 	let isEditModalOpen = $state(false);
@@ -108,6 +110,14 @@
 
 		<!-- Action Buttons -->
 		<div class="flex items-center gap-3">
+			<button
+				type="button"
+				class="nexus-secondary-button h-10 px-4 text-label-md cursor-pointer"
+				onclick={() => (isBulkModalOpen = true)}
+			>
+				<span class="material-symbols-outlined text-[18px]">upload_file</span>
+				<span>Bulk Upload</span>
+			</button>
 			<button
 				type="button"
 				class="nexus-primary-button h-10 px-4 shadow-sm cursor-pointer"
@@ -375,6 +385,14 @@
 	<!-- Create User Modal -->
 	<CreateUserModal
 		bind:open={isCreateModalOpen}
+		{clients}
+		{projects}
+		allowedRoleScope="all"
+	/>
+
+	<!-- Bulk Upload Modal -->
+	<BulkUploadUsersModal
+		bind:open={isBulkModalOpen}
 		{clients}
 		{projects}
 		allowedRoleScope="all"

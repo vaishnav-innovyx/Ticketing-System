@@ -18,6 +18,7 @@
 			case 'In Progress':
 				return 'bg-[var(--color-surface-container-high)] text-[var(--color-on-surface-variant)] border border-[var(--color-outline-variant)]/60';
 			case 'Awaiting Client':
+			case 'Awaiting Client Approval':
 			case 'Awaiting Your Response':
 				return 'bg-[#FFF4E5] text-[#ED6C02] border border-[#FFE0B2] font-semibold';
 			case 'Resolved':

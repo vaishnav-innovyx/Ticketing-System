@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { ASSIGNABLE_ROLES, isClientRole, provisionUser } from '$lib/server/users';
 import type { Actions, PageServerLoad } from './$types';
 
 const SEED_FALLBACK_MEMBERS = [
@@ -105,48 +106,100 @@ export const actions: Actions = {
 			return fail(403, { error: 'Client Admins can only add users to their own organization.' });
 		}
 
-		// Create user in Supabase Auth
-		const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-			email,
-			password: password || 'ChangeMe123!',
-			email_confirm: true,
-			user_metadata: { full_name: fullName }
-		});
-
-		if (authError || !authData.user) {
-			return fail(400, {
-				error: authError?.message || 'Failed to create authentication user account.',
-				fullName,
-				email
-			});
+		const result = await provisionUser({ fullName, email, password, role, clientId, projectIds });
+		if ('error' in result) {
+			return fail(400, { error: result.error, fullName, email });
 		}
 
-		const newUserId = authData.user.id;
+		return { success: true, createdUserId: result.userId };
+	},
 
-		// Upsert into profiles
-		const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
-			id: newUserId,
-			email,
-			full_name: fullName,
-			role: role as never,
-			client_id: clientId
-		});
+	bulkCreateUsers: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
 
-		if (profileError) {
-			console.error('Error creating profile for user:', profileError);
-			return fail(500, { error: profileError.message });
+		const { data: callerProfile } = await supabase
+			.from('profiles')
+			.select('role, client_id')
+			.eq('id', user.id)
+			.single();
+		if (!callerProfile || (callerProfile.role !== 'super_admin' && callerProfile.role !== 'client_admin')) {
+			return fail(403, { error: 'You do not have permission to create user accounts.' });
 		}
 
-		// Assign project memberships
-		if (projectIds.length > 0) {
-			const memberInserts = projectIds.map((projectId) => ({
-				project_id: projectId,
-				user_id: newUserId
-			}));
-			await supabaseAdmin.from('project_members').insert(memberInserts);
+		const formData = await request.formData();
+		let rows: Array<Record<string, string>>;
+		try {
+			rows = JSON.parse(String(formData.get('rows') || '[]'));
+		} catch {
+			return fail(400, { error: 'Malformed upload payload.' });
+		}
+		if (!Array.isArray(rows) || rows.length === 0) {
+			return fail(400, { error: 'No rows to import.' });
 		}
 
-		return { success: true, createdUserId: newUserId };
+		const [{ data: dbClients }, { data: dbProjects }] = await Promise.all([
+			supabaseAdmin.from('clients').select('id, code'),
+			supabaseAdmin.from('projects').select('id, code, client_id')
+		]);
+
+		const clientByCode = new Map((dbClients || []).map((c) => [c.code.toUpperCase(), c.id]));
+		const projects = dbProjects || [];
+
+		const results: Array<{ row: number; email: string; status: 'created' | 'failed'; error?: string }> = [];
+
+		for (let i = 0; i < rows.length; i++) {
+			const raw = rows[i];
+			const rowNum = i + 2; // +1 header, +1 to 1-index
+			const fullName = String(raw.full_name || '').trim();
+			const email = String(raw.email || '').trim().toLowerCase();
+			const password = String(raw.password || '').trim();
+			const role = String(raw.role || '').trim();
+			const clientCode = String(raw.client_code || '').trim().toUpperCase();
+			const projectCodes = String(raw.project_codes || '')
+				.split(/[,;|]/)
+				.map((s) => s.trim().toUpperCase())
+				.filter(Boolean);
+
+			const push = (status: 'created' | 'failed', error?: string) =>
+				results.push({ row: rowNum, email, status, error });
+
+			if (!fullName || !email) {
+				push('failed', 'Full name and email are required.');
+				continue;
+			}
+			if (!ASSIGNABLE_ROLES.includes(role as never)) {
+				push('failed', `Unknown role "${role}".`);
+				continue;
+			}
+
+			let clientId: string | null = null;
+			if (isClientRole(role)) {
+				clientId = clientByCode.get(clientCode) ?? null;
+				if (!clientId) {
+					push('failed', `Unknown client code "${raw.client_code}".`);
+					continue;
+				}
+			}
+
+			if (callerProfile.role === 'client_admin') {
+				if (!isClientRole(role) || clientId !== callerProfile.client_id) {
+					push('failed', 'Outside your organization.');
+					continue;
+				}
+			}
+
+			const projectIds = projects
+				.filter((p) => projectCodes.includes(p.code.toUpperCase()) && (!clientId || p.client_id === clientId))
+				.map((p) => p.id);
+
+			const outcome = await provisionUser({ fullName, email, password, role, clientId, projectIds });
+			if ('error' in outcome) push('failed', outcome.error);
+			else push('created');
+		}
+
+		const created = results.filter((r) => r.status === 'created').length;
+		return { success: true, created, failed: results.length - created, results };
 	},
 
 	updateUser: async ({ request, locals: { supabase, safeGetSession } }) => {
