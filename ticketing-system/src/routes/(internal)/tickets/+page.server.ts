@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { requireInternalRole } from '$lib/server/authz';
+import { dispatchStageEmailNotification } from '$lib/server/email';
 import type { Actions, PageServerLoad } from './$types';
 
 const SEED_FALLBACK_TICKETS = [
@@ -294,8 +295,12 @@ export const actions: Actions = {
 			return fail(500, { error: ticketError.message });
 		}
 
-		// The log_ticket_status_change DB trigger already logs this insert to
-		// ticket_events automatically (attributed via raised_by) — no manual insert needed.
+		// Dispatch stage notification email to Raiser (TO) and Project Admins/Dev/DM (CC)
+		dispatchStageEmailNotification({
+			ticketId: newTicket.id,
+			event: 'ticket_raised',
+			actorId: user.id
+		}).catch((err) => console.error('Failed to dispatch ticket_raised email:', err));
 
 		return { success: true, createdTicketId: newTicket.id };
 	},
@@ -368,6 +373,13 @@ export const actions: Actions = {
 		if (error) {
 			return fail(500, { error: error.message });
 		}
+
+		// Dispatch stage notification email to Raiser (TO) and Project Admins/Dev/DM (CC)
+		dispatchStageEmailNotification({
+			ticketId,
+			event: targetStatus as any,
+			actorId: user.id
+		}).catch((err) => console.error(`Failed to dispatch ${targetStatus} email:`, err));
 
 		return { success: true };
 	},

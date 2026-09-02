@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { dispatchStageEmailNotification } from '$lib/server/email';
 import { PRIORITY_LABEL, type TicketDbPriority } from '$lib/portal/ticketDisplay';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -74,6 +75,7 @@ export const actions: Actions = {
 		}
 
 		const { data: projectRow } = await supabaseAdmin.from('projects').select('default_poc_id').eq('id', projectId).single();
+		const requiresApproval = profile.role === 'client_raiser';
 
 		const { data: ticket, error: insertError } = await supabaseAdmin
 			.from('tickets')
@@ -86,7 +88,7 @@ export const actions: Actions = {
 				description,
 				raised_by: user.id,
 				poc_id: projectRow?.default_poc_id ?? undefined,
-				requires_admin_approval: profile.role === 'client_raiser'
+				requires_admin_approval: requiresApproval
 			})
 			.select('id, token, title, priority, projects(name)')
 			.single();
@@ -118,6 +120,13 @@ export const actions: Actions = {
 			}
 		}
 
+		// Dispatch stage notification email
+		dispatchStageEmailNotification({
+			ticketId: ticket.id,
+			event: requiresApproval ? 'pending_admin_approval' : 'ticket_raised',
+			actorId: user.id
+		}).catch((err) => console.error('Failed to dispatch portal ticket creation email:', err));
+
 		return {
 			success: true,
 			ticket: {
@@ -126,7 +135,7 @@ export const actions: Actions = {
 				priority: (ticket.priority ? PRIORITY_LABEL[ticket.priority as TicketDbPriority] : null) ?? ticket.priority,
 				application: (ticket.projects as { name?: string } | null)?.name ?? '',
 				ccRecipients: ccEmails,
-				requiresApproval: profile.role === 'client_raiser'
+				requiresApproval
 			}
 		};
 	}

@@ -71,7 +71,9 @@ export type Database = {
           body: string
           event: Database["public"]["Enums"]["notification_event"]
           id: string
+          in_reply_to: string | null
           recipient_email: string
+          root_message_id: string | null
           sent_at: string
           subject: string
           ticket_id: string
@@ -80,7 +82,9 @@ export type Database = {
           body: string
           event: Database["public"]["Enums"]["notification_event"]
           id?: string
+          in_reply_to?: string | null
           recipient_email: string
+          root_message_id?: string | null
           sent_at?: string
           subject: string
           ticket_id: string
@@ -89,7 +93,9 @@ export type Database = {
           body?: string
           event?: Database["public"]["Enums"]["notification_event"]
           id?: string
+          in_reply_to?: string | null
           recipient_email?: string
+          root_message_id?: string | null
           sent_at?: string
           subject?: string
           ticket_id?: string

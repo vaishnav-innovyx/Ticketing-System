@@ -1,4 +1,5 @@
 import { error, fail } from '@sveltejs/kit';
+import { dispatchStageEmailNotification } from '$lib/server/email';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
@@ -109,6 +110,11 @@ export const actions: Actions = {
 			.eq('id', ticket.id);
 
 		if (updateError) return fail(500, { error: updateError.message });
+
+		dispatchStageEmailNotification({ ticketId: ticket.id, event: 'closed', actorId: user.id }).catch((err) =>
+			console.error('Failed to dispatch closed email:', err)
+		);
+
 		return { success: true };
 	},
 
@@ -133,6 +139,11 @@ export const actions: Actions = {
 			.eq('id', ticket.id);
 
 		if (updateError) return fail(500, { error: updateError.message });
+
+		dispatchStageEmailNotification({ ticketId: ticket.id, event: 'reopened', actorId: user.id }).catch((err) =>
+			console.error('Failed to dispatch reopened email:', err)
+		);
+
 		return { success: true };
 	},
 
@@ -205,6 +216,14 @@ export const actions: Actions = {
 			.eq('id', ticket.id);
 
 		if (updateError) return fail(500, { error: updateError.message });
+
+		dispatchStageEmailNotification({
+			ticketId: ticket.id,
+			event: 'estimate_approved',
+			actorId: user.id,
+			notes
+		}).catch((err) => console.error('Failed to dispatch estimate_approved email:', err));
+
 		return { success: true };
 	},
 
@@ -233,6 +252,14 @@ export const actions: Actions = {
 			.eq('id', ticket.id);
 
 		if (updateError) return fail(500, { error: updateError.message });
+
+		dispatchStageEmailNotification({
+			ticketId: ticket.id,
+			event: 'estimate_rejected',
+			actorId: user.id,
+			notes
+		}).catch((err) => console.error('Failed to dispatch estimate_rejected email:', err));
+
 		return { success: true };
 	},
 
@@ -308,6 +335,13 @@ export const actions: Actions = {
 			.eq('id', ticket.id);
 
 		if (updateError) return fail(500, { error: updateError.message });
+
+		dispatchStageEmailNotification({
+			ticketId: ticket.id,
+			event: 'ticket_raised',
+			actorId: user.id
+		}).catch((err) => console.error('Failed to dispatch approveRaisedTicket email:', err));
+
 		return { success: true };
 	},
 
@@ -357,6 +391,14 @@ export const actions: Actions = {
 			.eq('id', ticket.id);
 
 		if (updateError) return fail(500, { error: updateError.message });
+
+		dispatchStageEmailNotification({
+			ticketId: ticket.id,
+			event: 'admin_rejected',
+			actorId: user.id,
+			notes: reason
+		}).catch((err) => console.error('Failed to dispatch admin_rejected email:', err));
+
 		return { success: true };
 	}
 };
