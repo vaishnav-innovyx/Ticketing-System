@@ -37,17 +37,19 @@
 	<!-- Left: Brand Logo & Title -->
 	<div class="flex items-center gap-6">
 		<a href="/portal" class="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-			<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-primary-container)] text-white shadow-2xs">
-				<span class="material-symbols-outlined text-[22px]">support_agent</span>
-			</div>
-			<div>
+			<img
+				src="/logo.png"
+				alt="Resolv Logo"
+				class="h-40 w-56 object-contain "
+			/>
+			<!-- <div>
 				<div class="text-[16px] font-bold tracking-tight text-[var(--color-primary)]">
-					Nexus Support
+					Resolv Support
 				</div>
 				<div class="text-[10px] font-semibold tracking-wider text-[var(--color-on-surface-variant)] uppercase">
 					Client Portal
 				</div>
-			</div>
+			</div> -->
 		</a>
 
 		<!-- Desktop Navigation Links -->

@@ -1,13 +1,13 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
+	import logo from '$lib/assets/logo.png';
 	import '../app.css';
 
 	let { children } = $props();
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
-	<title>Nexus Service Desk</title>
+	<link rel="icon" type="image/png" href={logo} />
+	<title>Resolv Service Desk</title>
 </svelte:head>
 
 {@render children()}

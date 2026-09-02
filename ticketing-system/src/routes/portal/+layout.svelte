@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>Nexus Client Portal - Help Center</title>
+	<title>Resolv Client Portal - Help Center</title>
 </svelte:head>
 
 <ClientAppShell profile={data.profile} pendingApprovalCount={data.pendingApprovalCount}>

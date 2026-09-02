@@ -49,8 +49,9 @@
 			<span class="material-symbols-outlined">menu</span>
 		</button>
 
-		<div class="hidden items-center gap-2 text-title-lg font-bold text-[var(--color-on-surface)] sm:flex">
-			Nexus Service Desk
+		<div class="hidden items-center gap-2.5 text-title-lg font-bold text-[var(--color-on-surface)] sm:flex">
+			<!-- <img src="/logo.png" alt="Resolv Logo" class="h-7 w-7 rounded-md bg-white object-contain p-0.5 shadow-2xs border border-[var(--color-outline-variant)]/40" /> -->
+			<span>Ticketing & Support System</span>
 		</div>
 	</div>
 

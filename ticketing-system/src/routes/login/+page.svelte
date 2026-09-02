@@ -7,14 +7,18 @@
 </script>
 
 <svelte:head>
-	<title>Sign In - Nexus</title>
+	<title>Sign In - Resolv Support</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center bg-[var(--color-surface)] px-4">
-	<div class="w-full max-w-sm rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] p-8 shadow-sm space-y-6">
-		<div class="space-y-1 text-center">
-			<h1 class="text-2xl font-bold text-[var(--color-on-surface)]">Sign in</h1>
-			<p class="text-body-sm text-[var(--color-on-surface-variant)]">Nexus Ticketing System</p>
+	<div class="w-full max-w-sm rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] p-8 shadow-sm space-y-4">
+		<div class="text-center">
+			<div class="flex justify-center -mt-6 -mb-8">
+				<img src="/logo.png" alt="Resolv Logo" class="h-48 w-auto object-contain" />
+			</div>
+			<div>
+				<h1 class="text-2xl font-bold text-[var(--color-on-surface)]">Sign in</h1>
+			</div>
 		</div>
 
 		<form

@@ -38,7 +38,7 @@
 </script>
 
 <svelte:head>
-	<title>Support Center - Nexus Client Portal</title>
+	<title>Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 <div class="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 md:px-10 md:py-10 space-y-8">

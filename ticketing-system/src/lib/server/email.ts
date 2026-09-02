@@ -14,7 +14,7 @@ export interface EmailRoutingResult {
 	cc: string[];
 }
 
-const DEFAULT_FROM = privateEnv.SMTP_FROM || '"Nexus Ticketing System" <alerts@innovyxtechlabs.com>';
+const DEFAULT_FROM = privateEnv.SMTP_FROM || '"Resolv Ticketing System" <alerts@innovyxtechlabs.com>';
 const DOMAIN = 'innovyxtechlabs.com';
 
 // Initialize Nodemailer SMTP Transport

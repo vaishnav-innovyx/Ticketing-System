@@ -68,12 +68,14 @@
 	<!-- Brand Header -->
 	<div class="mb-6 flex h-12 items-center justify-between px-5">
 		<div class="flex items-center gap-2.5">
-			<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-primary-container)] text-white shadow">
-				<span class="material-symbols-outlined text-[20px]">support_agent</span>
-			</div>
+			<img
+				src="/logo.png"
+				alt="Resolv Logo"
+				class="h-8 w-8 rounded-lg bg-white object-contain p-0.5 shadow shrink-0"
+			/>
 			<div>
 				<div class="text-[13px] font-bold tracking-tight text-white uppercase">
-					Nexus Service Desk
+					Resolv Desk
 				</div>
 				<div class="text-[10px] tracking-wider text-[var(--color-sidebar-muted)] uppercase">
 					Support Portal

@@ -27,7 +27,7 @@ export interface MasterLayoutOptions {
 	actionText?: string;
 }
 
-const APP_NAME = publicEnv.PUBLIC_APP_NAME || 'Nexus Ticketing System';
+const APP_NAME = publicEnv.PUBLIC_APP_NAME || 'Resolv Ticketing System';
 const SITE_URL = publicEnv.PUBLIC_SITE_URL || 'http://localhost:5173';
 const COMPANY_NAME = privateEnv.EMAIL_COMPANY_NAME || 'Innovyx Tech Labs';
 const SUPPORT_ADDRESS = privateEnv.EMAIL_SUPPORT_ADDRESS || 'alerts@innovyxtechlabs.com';
