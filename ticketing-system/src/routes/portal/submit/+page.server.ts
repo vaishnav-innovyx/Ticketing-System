@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 	return { projects: projects ?? [] };
 };
 
-const TICKET_RAISER_ROLES = ['super_admin', 'poc', 'specialist', 'delivery_lead', 'client_raiser'];
+const TICKET_RAISER_ROLES = ['super_admin', 'poc', 'specialist', 'delivery_lead', 'client_admin', 'project_admin', 'client_raiser'];
 
 export const actions: Actions = {
 	default: async ({ request, locals: { supabase, safeGetSession } }) => {

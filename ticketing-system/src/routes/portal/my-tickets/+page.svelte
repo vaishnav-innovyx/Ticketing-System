@@ -14,7 +14,11 @@
 			id: t.token ?? t.id,
 			title: t.title,
 			description: t.description ?? '',
-			status: t.status === 'client_approval' && t.client_approved_at ? 'Approved — Starting Soon' : STATUS_LABEL[t.status],
+			status: t.admin_rejected_at
+				? 'Rejected'
+				: t.status === 'client_approval' && t.client_approved_at
+					? 'Approved — Starting Soon'
+					: STATUS_LABEL[t.status],
 			category: CATEGORY_LABEL[t.category],
 			priority: PRIORITY_LABEL[t.priority],
 			application: t.projects?.name ?? '',
@@ -27,11 +31,11 @@
 	const applicationOptions = $derived([...new Set(tickets.map((t) => t.application))]);
 
 	const totalCount = $derived(tickets.length);
-	const openCount = $derived(tickets.filter((t) => t.status !== 'Resolved').length);
+	const openCount = $derived(tickets.filter((t) => t.status !== 'Resolved' && t.status !== 'Rejected').length);
 	const awaitingCount = $derived(
 		tickets.filter((t) => t.status === 'Awaiting Client Approval' || t.status === 'Awaiting Client' || t.status === 'Awaiting Your Response').length
 	);
-	const resolvedCount = $derived(tickets.filter((t) => t.status === 'Resolved').length);
+	const resolvedCount = $derived(tickets.filter((t) => t.status === 'Resolved' || t.status === 'Rejected').length);
 
 	const filteredTickets = $derived(
 		tickets.filter((t) => {
@@ -43,9 +47,10 @@
 
 			const matchesStatus =
 				statusFilter === 'All' ||
-				(statusFilter === 'Open' && t.status !== 'Resolved') ||
+				(statusFilter === 'Open' && t.status !== 'Resolved' && t.status !== 'Rejected') ||
 				(statusFilter === 'Resolved' && t.status === 'Resolved') ||
-				(statusFilter === 'Awaiting Response' &&
+				(statusFilter === 'Rejected' && t.status === 'Rejected') ||
+				(statusFilter === 'Awaiting Client Approval' &&
 					(t.status === 'Awaiting Client Approval' || t.status === 'Awaiting Client' || t.status === 'Awaiting Your Response'));
 
 			const matchesType = typeFilter === 'All' || t.category === typeFilter;
@@ -146,6 +151,7 @@
 				<option value="Open">Open</option>
 				<option value="Awaiting Client Approval">Awaiting Client Approval</option>
 				<option value="Resolved">Resolved</option>
+				<option value="Rejected">Rejected</option>
 			</select>
 
 			<select

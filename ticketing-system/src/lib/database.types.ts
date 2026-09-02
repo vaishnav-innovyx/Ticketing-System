@@ -768,6 +768,7 @@ export type Database = {
         | "specialist"
         | "delivery_lead"
         | "client_admin"
+        | "project_admin"
         | "client_raiser"
         | "client_viewer"
     }
@@ -927,6 +928,7 @@ export const Constants = {
         "specialist",
         "delivery_lead",
         "client_admin",
+        "project_admin",
         "client_raiser",
         "client_viewer",
       ],

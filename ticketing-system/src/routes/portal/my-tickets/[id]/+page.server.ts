@@ -180,8 +180,8 @@ export const actions: Actions = {
 		if (!user) return fail(401, { error: 'Not signed in.' });
 
 		const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-		if (profile?.role !== 'client_admin' && profile?.role !== 'client_raiser') {
-			return fail(403, { error: 'Only a client admin or raiser can approve an estimate.' });
+		if (profile?.role !== 'client_admin' && profile?.role !== 'project_admin' && profile?.role !== 'client_raiser') {
+			return fail(403, { error: 'Only a client admin, project admin, or raiser can approve an estimate.' });
 		}
 
 		const { data: ticket } = await supabase.from('tickets').select('id, status').eq('token', params.id).maybeSingle();
@@ -213,8 +213,8 @@ export const actions: Actions = {
 		if (!user) return fail(401, { error: 'Not signed in.' });
 
 		const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-		if (profile?.role !== 'client_admin' && profile?.role !== 'client_raiser') {
-			return fail(403, { error: 'Only a client admin or raiser can request estimate changes.' });
+		if (profile?.role !== 'client_admin' && profile?.role !== 'project_admin' && profile?.role !== 'client_raiser') {
+			return fail(403, { error: 'Only a client admin, project admin, or raiser can request estimate changes.' });
 		}
 
 		const formData = await request.formData();
@@ -275,19 +275,31 @@ export const actions: Actions = {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Not signed in.' });
 
-		const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-		if (profile?.role !== 'client_admin') {
-			return fail(403, { error: 'Only a client admin can approve a raised ticket.' });
-		}
-
 		const { data: ticket } = await supabase
 			.from('tickets')
-			.select('id, requires_admin_approval, admin_approved_at')
+			.select('id, project_id, requires_admin_approval, admin_approved_at')
 			.eq('token', params.id)
 			.maybeSingle();
 		if (!ticket) return fail(404, { error: 'Ticket not found.' });
 		if (!ticket.requires_admin_approval || ticket.admin_approved_at) {
 			return fail(400, { error: 'This ticket is not awaiting approval.' });
+		}
+
+		const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+		if (profile?.role !== 'project_admin' && profile?.role !== 'super_admin') {
+			return fail(403, { error: 'Only an assigned project admin can approve a raised ticket.' });
+		}
+
+		if (profile.role === 'project_admin') {
+			const { data: membership } = await supabase
+				.from('project_members')
+				.select('id')
+				.eq('project_id', ticket.project_id)
+				.eq('user_id', user.id)
+				.maybeSingle();
+			if (!membership) {
+				return fail(403, { error: 'You are not assigned as a project admin for this project.' });
+			}
 		}
 
 		const { error: updateError } = await supabase
@@ -303,18 +315,13 @@ export const actions: Actions = {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Not signed in.' });
 
-		const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-		if (profile?.role !== 'client_admin') {
-			return fail(403, { error: 'Only a client admin can reject a raised ticket.' });
-		}
-
 		const formData = await request.formData();
 		const reason = String(formData.get('reason') || '').trim();
 		if (!reason) return fail(400, { error: 'Let the raiser know why this is being rejected.' });
 
 		const { data: ticket } = await supabase
 			.from('tickets')
-			.select('id, requires_admin_approval, admin_approved_at')
+			.select('id, project_id, requires_admin_approval, admin_approved_at')
 			.eq('token', params.id)
 			.maybeSingle();
 		if (!ticket) return fail(404, { error: 'Ticket not found.' });
@@ -322,9 +329,31 @@ export const actions: Actions = {
 			return fail(400, { error: 'This ticket is not awaiting approval.' });
 		}
 
+		const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+		if (profile?.role !== 'project_admin' && profile?.role !== 'super_admin') {
+			return fail(403, { error: 'Only an assigned project admin can reject a raised ticket.' });
+		}
+
+		if (profile.role === 'project_admin') {
+			const { data: membership } = await supabase
+				.from('project_members')
+				.select('id')
+				.eq('project_id', ticket.project_id)
+				.eq('user_id', user.id)
+				.maybeSingle();
+			if (!membership) {
+				return fail(403, { error: 'You are not assigned as a project admin for this project.' });
+			}
+		}
+
 		const { error: updateError } = await supabase
 			.from('tickets')
-			.update({ admin_rejected_at: new Date().toISOString(), admin_rejection_reason: reason })
+			.update({
+				status: 'closed',
+				closed_at: new Date().toISOString(),
+				admin_rejected_at: new Date().toISOString(),
+				admin_rejection_reason: reason
+			})
 			.eq('id', ticket.id);
 
 		if (updateError) return fail(500, { error: updateError.message });

@@ -121,6 +121,8 @@
 		switch (role) {
 			case 'client_admin':
 				return { label: 'Client Admin', bg: 'bg-purple-100 text-purple-800 border-purple-200' };
+			case 'project_admin':
+				return { label: 'Project Admin', bg: 'bg-indigo-100 text-indigo-800 border-indigo-200' };
 			case 'client_raiser':
 				return { label: 'Ticket Raiser', bg: 'bg-blue-100 text-blue-800 border-blue-200' };
 			case 'client_viewer':

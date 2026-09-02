@@ -214,47 +214,60 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const targetUserId = String(formData.get('user_id') || '').trim();
 		const fullName = String(formData.get('full_name') || '').trim();
+		const email = String(formData.get('email') || '').trim().toLowerCase();
 		const role = String(formData.get('role') || 'client_raiser');
 		const clientIdRaw = String(formData.get('client_id') || '').trim();
-		const clientId = clientIdRaw && role.startsWith('client_') ? clientIdRaw : null;
+		const clientId = clientIdRaw && isClientRole(role) ? clientIdRaw : null;
 		const projectIds = formData.getAll('project_ids').map(String).filter(Boolean);
 
 		if (!targetUserId || !fullName) {
 			return fail(400, { error: 'User ID and full name are required.' });
 		}
 
-		if (role.startsWith('client_') && !clientId) {
+		if (isClientRole(role) && !clientId) {
 			return fail(400, { error: 'Client organization is required for client roles.' });
 		}
 
+		const { data: targetProfile } = await supabaseAdmin.from('profiles').select('client_id, email').eq('id', targetUserId).single();
+
 		if (callerProfile.role === 'client_admin') {
-			const { data: targetProfile } = await supabaseAdmin.from('profiles').select('client_id').eq('id', targetUserId).single();
 			if (!targetProfile || targetProfile.client_id !== callerProfile.client_id || clientId !== callerProfile.client_id) {
 				return fail(403, { error: 'Client Admins can only edit users within their own organization.' });
 			}
 		}
 
 		// Update profile
+		const profileUpdateData: { full_name: string; role: never; client_id: string | null; email?: string } = {
+			full_name: fullName,
+			role: role as never,
+			client_id: clientId
+		};
+		if (email) {
+			profileUpdateData.email = email;
+		}
+
 		const { error: profileError } = await supabaseAdmin
 			.from('profiles')
-			.update({
-				full_name: fullName,
-				role: role as never,
-				client_id: clientId
-			})
+			.update(profileUpdateData)
 			.eq('id', targetUserId);
 
 		if (profileError) {
 			return fail(500, { error: profileError.message });
 		}
 
-		// Update user metadata in auth
+		// Update auth user (email + metadata)
+		const authUpdatePayload: { email?: string; email_confirm?: boolean; user_metadata: { full_name: string } } = {
+			user_metadata: { full_name: fullName }
+		};
+		if (email && targetProfile && email !== targetProfile.email) {
+			authUpdatePayload.email = email;
+			authUpdatePayload.email_confirm = true;
+		}
+
 		try {
-			await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
-				user_metadata: { full_name: fullName }
-			});
+			await supabaseAdmin.auth.admin.updateUserById(targetUserId, authUpdatePayload);
 		} catch (err) {
-			console.error('Error updating auth metadata:', err);
+			console.error('Error updating auth metadata/email:', err);
 		}
 
 		// Sync project memberships: remove existing, insert selected

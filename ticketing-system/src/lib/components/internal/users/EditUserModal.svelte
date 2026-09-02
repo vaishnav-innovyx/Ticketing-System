@@ -45,6 +45,7 @@
 	let errorMessage = $state<string | null>(null);
 
 	let fullName = $state('');
+	let email = $state('');
 	let role = $state<string>('client_raiser');
 	let clientId = $state<string>('');
 	let selectedProjectIds = $state<string[]>([]);
@@ -53,9 +54,10 @@
 	$effect(() => {
 		if (user && open) {
 			fullName = user.full_name || '';
+			email = user.email || '';
 			role = user.role || 'client_raiser';
 			clientId = user.client_id || (clients[0]?.id ?? '');
-			isClientUser = !!user.client_id || user.role.startsWith('client_');
+			isClientUser = !!user.client_id || user.role.startsWith('client_') || user.role === 'project_admin';
 			selectedProjectIds = user.assigned_projects?.map((p) => p.id) || [];
 			errorMessage = null;
 		}
@@ -161,17 +163,19 @@
 			>
 				<input type="hidden" name="user_id" value={user.id} />
 
-				<!-- Email (Read-only identifier) -->
+				<!-- Email Address -->
 				<div class="space-y-1.5">
 					<label for="edit-user-email" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
-						Email Address
+						Email Address <span class="text-[var(--color-error)]">*</span>
 					</label>
 					<input
 						id="edit-user-email"
+						name="email"
 						type="email"
-						disabled
-						value={user.email}
-						class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)] px-3.5 py-2.5 text-body-md text-[var(--color-on-surface-variant)] font-mono opacity-80 cursor-not-allowed"
+						required
+						bind:value={email}
+						placeholder="alex@company.com"
+						class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-body-md text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)] outline-none focus:border-[var(--color-primary-container)] focus:ring-2 focus:ring-[var(--color-primary-container)]/20"
 					/>
 				</div>
 
@@ -234,6 +238,7 @@
 					>
 						{#if isClientUser}
 							<option value="client_raiser">Client Raiser (Raise, approve estimates, verify & close tickets)</option>
+							<option value="project_admin">Project Admin (Approve raised tickets & manage assigned projects)</option>
 							<option value="client_admin">Client Admin (Manage team, assign projects, review metrics)</option>
 							<option value="client_viewer">Client Viewer (Read-only status overview & ticket tracking)</option>
 						{:else}

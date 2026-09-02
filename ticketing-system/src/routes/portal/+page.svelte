@@ -7,13 +7,21 @@
 		data.tickets.map((t) => ({
 			id: t.token ?? t.id,
 			title: t.title,
-			status: STATUS_LABEL[t.status],
+			status: t.admin_rejected_at
+				? 'Rejected'
+				: t.requires_admin_approval && !t.admin_approved_at
+					? 'Pending Approval'
+					: STATUS_LABEL[t.status],
 			lastUpdated: formatRelative(t.updated_at)
 		}))
 	);
 
 	function getStatusBadgeClass(status: string) {
 		switch (status) {
+			case 'Rejected':
+				return 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)] border border-[var(--color-error)]/30 font-semibold';
+			case 'Pending Approval':
+				return 'bg-amber-100 text-amber-800 border border-amber-300 font-semibold';
 			case 'In Development':
 			case 'In Progress':
 				return 'bg-[var(--color-surface-container-high)] text-[var(--color-on-surface-variant)] border border-[var(--color-outline-variant)]/60';

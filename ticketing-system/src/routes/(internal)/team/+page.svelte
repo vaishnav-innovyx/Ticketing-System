@@ -77,6 +77,8 @@
 				return { bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', label: 'Delivery Lead' };
 			case 'client_admin':
 				return { bg: 'bg-purple-50 text-purple-700 border-purple-200', label: 'Client Admin' };
+			case 'project_admin':
+				return { bg: 'bg-indigo-50 text-indigo-700 border-indigo-200', label: 'Project Admin' };
 			case 'client_raiser':
 				return { bg: 'bg-amber-50 text-amber-700 border-amber-200', label: 'Client Raiser' };
 			case 'client_viewer':
@@ -233,6 +235,7 @@
 				<option value="specialist">Tech Specialists</option>
 				<option value="delivery_lead">Delivery Leads</option>
 				<option value="client_admin">Client Admins</option>
+				<option value="project_admin">Project Admins</option>
 				<option value="client_raiser">Client Raisers</option>
 				<option value="client_viewer">Client Viewers</option>
 			</select>

@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 
-const CLIENT_ROLES = ['client_admin', 'client_raiser', 'client_viewer'];
+const CLIENT_ROLES = ['client_admin', 'project_admin', 'client_raiser', 'client_viewer'];
 
 export const load: LayoutServerLoad = async ({ locals: { supabase, safeGetSession }, url }) => {
 	const { session, user } = await safeGetSession();
@@ -20,7 +20,7 @@ export const load: LayoutServerLoad = async ({ locals: { supabase, safeGetSessio
 	}
 
 	let pendingApprovalCount = 0;
-	if (profile.role === 'client_admin') {
+	if (profile.role === 'project_admin') {
 		const { count } = await supabase
 			.from('tickets')
 			.select('id', { count: 'exact', head: true })

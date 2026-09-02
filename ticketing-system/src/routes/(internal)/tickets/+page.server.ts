@@ -171,7 +171,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 					{ id: '33333333-3333-3333-3333-333333333333', code: 'TECHCO', name: 'TechCo Ltd' }
 				],
 				projects,
-				internalStaff: profiles.filter((p) => !['client_admin', 'client_raiser', 'client_viewer'].includes(p.role))
+				internalStaff: profiles.filter((p) => !['client_admin', 'project_admin', 'client_raiser', 'client_viewer'].includes(p.role))
 			};
 		}
 
@@ -180,7 +180,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 				tickets: [],
 				clients,
 				projects,
-				internalStaff: profiles.filter((p) => !['client_admin', 'client_raiser', 'client_viewer'].includes(p.role))
+				internalStaff: profiles.filter((p) => !['client_admin', 'project_admin', 'client_raiser', 'client_viewer'].includes(p.role))
 			};
 		}
 

@@ -77,6 +77,12 @@
 					title: 'Client Administrator',
 					desc: 'Manages organization staff seats, assigns project access, monitors ticket queues, and oversees organization analytics.'
 				};
+			case 'project_admin':
+				return {
+					badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+					title: 'Project Admin',
+					desc: 'Approves tickets raised by client raisers, oversees assigned project tickets, and manages project lifecycle.'
+				};
 			case 'client_raiser':
 				return {
 					badge: 'bg-amber-50 text-amber-700 border-amber-200',

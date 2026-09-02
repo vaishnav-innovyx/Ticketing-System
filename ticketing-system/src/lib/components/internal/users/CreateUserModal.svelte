@@ -60,7 +60,7 @@
 
 	$effect(() => {
 		if (roleCategory === 'client') {
-			if (!['client_admin', 'client_raiser', 'client_viewer'].includes(role)) {
+			if (!['client_admin', 'project_admin', 'client_raiser', 'client_viewer'].includes(role)) {
 				role = 'client_raiser';
 			}
 		} else {
@@ -280,6 +280,7 @@
 					>
 						{#if roleCategory === 'client'}
 							<option value="client_raiser">Client Raiser (Raise, approve estimates, verify & close tickets)</option>
+							<option value="project_admin">Project Admin (Approve raised tickets & manage assigned projects)</option>
 							<option value="client_admin">Client Admin (Manage team, assign projects, review metrics)</option>
 							<option value="client_viewer">Client Viewer (Read-only status overview & ticket tracking)</option>
 						{:else}

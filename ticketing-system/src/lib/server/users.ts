@@ -6,13 +6,14 @@ export const ASSIGNABLE_ROLES = [
 	'specialist',
 	'delivery_lead',
 	'client_admin',
+	'project_admin',
 	'client_raiser',
 	'client_viewer'
 ] as const;
 
 export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
-export const isClientRole = (role: string) => role.startsWith('client_');
+export const isClientRole = (role: string) => role.startsWith('client_') || role === 'project_admin';
 
 interface ProvisionInput {
 	fullName: string;

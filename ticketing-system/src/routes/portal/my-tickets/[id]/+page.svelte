@@ -18,7 +18,7 @@
 	let { data }: { data: PageData } = $props();
 
 	const isViewer = $derived(data.profile?.role === 'client_viewer');
-	const isAdmin = $derived(data.profile?.role === 'client_admin');
+	const isProjectAdmin = $derived(data.profile?.role === 'project_admin' || data.profile?.role === 'super_admin');
 	const isPendingApproval = $derived(
 		data.ticket.requires_admin_approval && !data.ticket.admin_approved_at && !data.ticket.admin_rejected_at
 	);
@@ -42,9 +42,11 @@
 		title: data.ticket.title,
 		description: data.ticket.description ?? '',
 		status:
-			data.ticket.status === 'client_approval' && data.ticket.client_approved_at
-				? 'Approved — Starting Soon'
-				: STATUS_LABEL[data.ticket.status],
+			data.ticket.admin_rejected_at
+				? 'Rejected'
+				: data.ticket.status === 'client_approval' && data.ticket.client_approved_at
+					? 'Approved — Starting Soon'
+					: STATUS_LABEL[data.ticket.status],
 		category: CATEGORY_LABEL[data.ticket.category],
 		priority: PRIORITY_LABEL[data.ticket.priority],
 		application: data.ticket.projects?.name ?? '',
@@ -175,7 +177,7 @@
 						<span class="material-symbols-outlined text-[20px] text-amber-600">hourglass_top</span>
 						<span>This ticket hasn't reached our team yet</span>
 					</h3>
-					{#if isAdmin}
+					{#if isProjectAdmin}
 						<p class="text-body-sm text-[var(--color-on-surface-variant)]">
 							A member of your team raised this ticket. Approve it to send it to our support desk, or reject it with a reason.
 						</p>

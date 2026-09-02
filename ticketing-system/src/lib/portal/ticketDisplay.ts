@@ -115,6 +115,7 @@ const ROLE_LABEL: Record<string, string> = {
 	specialist: 'Specialist',
 	delivery_lead: 'Delivery Lead',
 	client_admin: 'Client Admin',
+	project_admin: 'Project Admin',
 	client_raiser: 'Client',
 	client_viewer: 'Client'
 };
@@ -124,7 +125,7 @@ export function roleLabel(role: string): string {
 }
 
 export function isClientRole(role: string): boolean {
-	return role.startsWith('client_');
+	return role.startsWith('client_') || role === 'project_admin';
 }
 
 export function formatBytes(bytes: number | null): string {

@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { data: tickets } = await supabase
 		.from('tickets')
-		.select('id, token, title, status, updated_at, projects(name)')
+		.select('id, token, title, status, updated_at, admin_rejected_at, requires_admin_approval, admin_approved_at, projects(name)')
 		.order('updated_at', { ascending: false })
 		.limit(4);
 
@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		: { data: null };
 
 	let pendingApprovalTickets: { token: string | null; title: string; raiser: { full_name: string | null } | null }[] = [];
-	if (profile?.role === 'client_admin') {
+	if (profile?.role === 'project_admin') {
 		const { data: pending } = await supabase
 			.from('tickets')
 			.select('token, title, raiser:profiles!tickets_raised_by_fkey(full_name)')

@@ -27,7 +27,7 @@
 		allowedRoleScope?: 'all' | 'client_only' | 'internal_only';
 	} = $props();
 
-	const CLIENT_ROLES = ['client_admin', 'client_raiser', 'client_viewer'];
+	const CLIENT_ROLES = ['client_admin', 'project_admin', 'client_raiser', 'client_viewer'];
 	const INTERNAL_ROLES = ['super_admin', 'poc', 'specialist', 'delivery_lead'];
 	const allowedRoles = $derived(
 		allowedRoleScope === 'client_only'
@@ -90,7 +90,7 @@
 		if (!r.role.trim()) errors.push('Missing role');
 		else if (!allowedRoles.includes(r.role.trim())) errors.push(`Role "${r.role}" not allowed`);
 
-		const isClient = r.role.trim().startsWith('client_');
+		const isClient = r.role.trim().startsWith('client_') || r.role.trim() === 'project_admin';
 		const code = r.client_code.trim().toUpperCase();
 		if (isClient) {
 			if (!code) errors.push('client_code required for client role');
