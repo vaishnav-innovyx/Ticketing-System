@@ -526,6 +526,34 @@
 								</form>
 							{/if}
 						</div>
+
+						{#if data.dependencyNotes && data.dependencyNotes.length > 0}
+							{@const reportedPeople = data.dependencyNotes.filter((n) => n.kind === 'person')}
+							{@const reportedModules = data.dependencyNotes.filter((n) => n.kind === 'module')}
+							<div class="pt-2 border-t border-[var(--color-border-subtle)]/60 space-y-2">
+								<span class="text-label-sm uppercase tracking-wider text-[var(--color-outline)]">Reported Dependencies</span>
+								{#if reportedPeople.length > 0}
+									<div class="flex flex-wrap gap-1.5">
+										{#each reportedPeople as note}
+											<span class="inline-flex items-center gap-1 rounded bg-[var(--color-surface-container-high)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-on-surface-variant)]">
+												<span class="material-symbols-outlined text-[13px] text-[var(--color-primary)]">person</span>
+												<span>{note.label}{note.detail ? ` (${note.detail})` : ''}</span>
+											</span>
+										{/each}
+									</div>
+								{/if}
+								{#if reportedModules.length > 0}
+									<div class="flex flex-wrap gap-1.5">
+										{#each reportedModules as note}
+											<span class="inline-flex items-center gap-1 rounded bg-[var(--color-surface-container-high)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-on-surface-variant)]">
+												<span class="material-symbols-outlined text-[13px] text-[var(--color-primary)]">apps</span>
+												<span>{note.label}{note.detail ? ` (${note.detail})` : ''}</span>
+											</span>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
 					</div>
 				</div>
 

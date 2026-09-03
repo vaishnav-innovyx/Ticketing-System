@@ -44,6 +44,7 @@
 		delivery_lead_profile?: ProfileItem | null;
 		events?: TicketEvent[];
 		dependencies?: { id: string; depends_on: { id: string; token: string; title: string; status: string } }[];
+		dependencyNotes?: { id: string; kind: 'person' | 'module'; label: string; detail: string | null }[];
 		watchers?: { id: string; email: string; full_name: string | null }[];
 		attachments?: { id: string; file_name: string; file_size_bytes: number | null; mime_type: string | null }[];
 		messages?: { id: string; content: string; created_at: string; author: { full_name: string | null; role: string } | null }[];
@@ -193,7 +194,7 @@
 </script>
 
 <svelte:head>
-	<title>Tickets - Nexus Service Desk</title>
+	<title>Tickets - Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 <div class="space-y-6 md:space-y-8 min-w-0 w-full">
@@ -634,8 +635,19 @@
 										isDetailModalOpen = true;
 									}}
 								>
-									<span class="font-mono text-label-xs font-bold text-[var(--color-primary)] group-hover:underline">
-										{ticket.token || 'TICKET'}
+									<span class="inline-flex items-center gap-1.5">
+										<span class="font-mono text-label-xs font-bold text-[var(--color-primary)] group-hover:underline">
+											{ticket.token || 'TICKET'}
+										</span>
+										{#if ticket.dependencyNotes?.length}
+											<span
+												class="inline-flex items-center gap-0.5 rounded-md border border-[var(--color-outline-variant)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-on-surface-variant)]"
+												title="{ticket.dependencyNotes.length} reported dependenc{ticket.dependencyNotes.length === 1 ? 'y' : 'ies'}"
+											>
+												<span class="material-symbols-outlined text-[12px]">hub</span>
+												{ticket.dependencyNotes.length}
+											</span>
+										{/if}
 									</span>
 									<p class="font-semibold text-body-sm text-[var(--color-on-surface)] truncate mt-0.5 group-hover:text-[var(--color-primary)] transition-colors">
 										{ticket.title}

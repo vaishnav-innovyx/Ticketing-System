@@ -16,7 +16,7 @@
 </script>
 
 <svelte:head>
-	<title>Notifications - Nexus Service Desk</title>
+	<title>Notifications - Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl px-6 py-8 space-y-6">

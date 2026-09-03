@@ -16,27 +16,24 @@
 		<span class="text-body-xs text-[var(--color-on-surface-variant)]">{total} ticket{total === 1 ? '' : 's'} in view</span>
 	</div>
 
-	<div class="flex items-stretch gap-1.5 overflow-x-auto pb-1 sm:gap-2">
-		{#each stages as stage, i}
-			<div
-				class="flex min-w-[100px] flex-1 flex-col items-center gap-2 rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-low)] px-3 py-4"
-			>
-				<span class="text-display-sm font-bold text-[var(--color-primary)]">{stage.count}</span>
-				<span class="text-center text-label-xs font-semibold uppercase tracking-wide text-[var(--color-on-surface-variant)]">
+	<div class="space-y-3">
+		{#each stages as stage}
+			<div class="flex items-center gap-3">
+				<span class="w-40 shrink-0 truncate text-body-xs font-medium text-[var(--color-on-surface-variant)]" title={stage.label}>
 					{stage.label}
 				</span>
-				<div class="h-1.5 w-full rounded-full bg-[var(--color-surface-container)]">
+				<div class="h-2 flex-1 rounded-full bg-[var(--color-surface-container)]">
 					<div
-						class="h-1.5 rounded-full bg-[var(--color-primary-container)] transition-all duration-300"
+						class="h-2 rounded-full transition-all duration-300 {stage.label === 'Rejected'
+							? 'bg-[var(--color-error)]'
+							: 'bg-[var(--color-primary-container)]'}"
 						style="width: {(stage.count / maxCount) * 100}%"
 					></div>
 				</div>
+				<span class="w-8 shrink-0 text-right font-mono text-body-xs font-semibold tabular-nums text-[var(--color-on-surface)]">
+					{stage.count}
+				</span>
 			</div>
-			{#if i < stages.length - 1}
-				<div class="flex shrink-0 items-center text-[var(--color-on-surface-variant)]">
-					<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-				</div>
-			{/if}
 		{/each}
 	</div>
 </div>

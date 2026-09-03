@@ -51,7 +51,7 @@
 </script>
 
 <svelte:head>
-	<title>Nexus Service Desk - Internal Dashboard</title>
+	<title>Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 <div class="space-y-6 md:space-y-8">

@@ -1,7 +1,7 @@
 <footer class="border-t border-[var(--color-outline-variant)]/60 bg-[var(--color-surface)] py-8 text-center text-body-sm text-[var(--color-on-surface-variant)]">
 	<div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-10 flex flex-col sm:flex-row items-center justify-between gap-4">
 		<div class="flex items-center gap-2">
-			<span class="font-semibold text-[var(--color-on-surface)]">Nexus Service Desk</span>
+			<span class="font-semibold text-[var(--color-on-surface)]">Resolv - Ticketing & Support System</span>
 			<span>•</span>
 			<span>Client Self-Service Portal</span>
 		</div>

@@ -46,7 +46,7 @@
 </script>
 
 <svelte:head>
-	<title>Client Directory - Nexus Service Desk</title>
+	<title>Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 <div class="space-y-6 md:space-y-8">

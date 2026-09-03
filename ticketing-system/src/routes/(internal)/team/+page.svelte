@@ -90,7 +90,7 @@
 </script>
 
 <svelte:head>
-	<title>Team & Access - Nexus Service Desk</title>
+	<title>Team & Access - Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 <div class="space-y-6 md:space-y-8">

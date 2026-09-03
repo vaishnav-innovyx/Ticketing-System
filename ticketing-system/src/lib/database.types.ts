@@ -347,6 +347,51 @@ export type Database = {
           },
         ]
       }
+      ticket_dependency_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          detail: string | null
+          id: string
+          kind: Database["public"]["Enums"]["ticket_dependency_note_kind"]
+          label: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          detail?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["ticket_dependency_note_kind"]
+          label: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          detail?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["ticket_dependency_note_kind"]
+          label?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_dependency_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_dependency_notes_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_events: {
         Row: {
           actor_id: string | null
@@ -759,6 +804,7 @@ export type Database = {
         | "delivered"
         | "closed"
       ticket_category: "bug" | "enhancement" | "kt" | "training"
+      ticket_dependency_note_kind: "person" | "module"
       ticket_priority: "low" | "medium" | "high" | "critical"
       ticket_status:
         | "raised"

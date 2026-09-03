@@ -54,6 +54,16 @@ export const actions: Actions = {
 		const projectId = String(formData.get('project_id') || '');
 		const ccEmails = formData.getAll('cc').map(String).filter(Boolean);
 		const files = formData.getAll('attachments').filter((f): f is File => f instanceof File && f.size > 0);
+		const dependencyKinds = formData.getAll('dependency_kind').map(String);
+		const dependencyLabels = formData.getAll('dependency_label').map(String);
+		const dependencyDetails = formData.getAll('dependency_detail').map(String);
+		const dependencyRows = dependencyKinds
+			.map((kind, i) => ({
+				kind: kind === 'module' ? 'module' : 'person',
+				label: (dependencyLabels[i] ?? '').trim(),
+				detail: (dependencyDetails[i] ?? '').trim()
+			}))
+			.filter((d) => d.label);
 
 		if (!title || !description || !projectId) {
 			return fail(400, { error: 'Title, description, and application are required.' });
@@ -101,6 +111,18 @@ export const actions: Actions = {
 			await supabaseAdmin
 				.from('ticket_watchers')
 				.insert(ccEmails.map((email) => ({ ticket_id: ticket.id, email })));
+		}
+
+		if (dependencyRows.length > 0) {
+			await supabaseAdmin.from('ticket_dependency_notes').insert(
+				dependencyRows.map((d) => ({
+					ticket_id: ticket.id,
+					kind: d.kind as never,
+					label: d.label,
+					detail: d.detail || null,
+					created_by: user.id
+				}))
+			);
 		}
 
 		for (const file of files) {

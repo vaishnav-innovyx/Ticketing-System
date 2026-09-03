@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>Communication - Nexus Service Desk</title>
+	<title>Communication - Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 <div class="flex h-[calc(100vh-8rem)] gap-4">

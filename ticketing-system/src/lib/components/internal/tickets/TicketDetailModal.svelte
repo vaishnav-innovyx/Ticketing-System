@@ -57,6 +57,7 @@
 		delivery_lead_profile?: ProfileItem | null;
 		events?: TicketEvent[];
 		dependencies?: { id: string; depends_on: { id: string; token: string; title: string; status: string } }[];
+		dependencyNotes?: { id: string; kind: 'person' | 'module'; label: string; detail: string | null }[];
 		watchers?: { id: string; email: string; full_name: string | null }[];
 		attachments?: { id: string; file_name: string; file_size_bytes: number | null; mime_type: string | null }[];
 		messages?: { id: string; content: string; created_at: string; author: { full_name: string | null; role: string } | null }[];
@@ -730,6 +731,46 @@
 					</form>
 				{/if}
 			</div>
+
+			<!-- Reported Dependencies (raiser-supplied context, read-only) -->
+			{#if ticket.dependencyNotes && ticket.dependencyNotes.length > 0}
+				{@const reportedPeople = ticket.dependencyNotes.filter((n) => n.kind === 'person')}
+				{@const reportedModules = ticket.dependencyNotes.filter((n) => n.kind === 'module')}
+				<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-lowest)] p-4 space-y-3">
+					<span class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface)] flex items-center gap-1.5">
+						<span class="material-symbols-outlined text-[18px] text-[var(--color-primary)]">hub</span>
+						<span>Reported Dependencies</span>
+					</span>
+
+					{#if reportedPeople.length > 0}
+						<div class="space-y-1.5">
+							<span class="text-label-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">People</span>
+							<div class="flex flex-wrap gap-2">
+								{#each reportedPeople as note}
+									<span class="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-outline-variant)] px-2 py-0.5 text-label-xs font-semibold text-[var(--color-on-surface)]">
+										<span class="material-symbols-outlined text-[14px] text-[var(--color-on-surface-variant)]">person</span>
+										{note.label}{#if note.detail}<span class="font-normal text-[var(--color-on-surface-variant)]"> ({note.detail})</span>{/if}
+									</span>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					{#if reportedModules.length > 0}
+						<div class="space-y-1.5">
+							<span class="text-label-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">Modules / Systems</span>
+							<div class="flex flex-wrap gap-2">
+								{#each reportedModules as note}
+									<span class="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-outline-variant)] px-2 py-0.5 text-label-xs font-semibold text-[var(--color-on-surface)]">
+										<span class="material-symbols-outlined text-[14px] text-[var(--color-on-surface-variant)]">apps</span>
+										{note.label}{#if note.detail}<span class="font-normal text-[var(--color-on-surface-variant)]"> ({note.detail})</span>{/if}
+									</span>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
 
 			<!-- Watchers -->
 			<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-lowest)] p-4 space-y-3">

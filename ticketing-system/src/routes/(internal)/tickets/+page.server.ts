@@ -122,6 +122,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			{ data: dbProfiles },
 			{ data: dbEvents },
 			{ data: dbDependencies },
+			{ data: dbDependencyNotes },
 			{ data: dbWatchers },
 			{ data: dbAttachments },
 			{ data: dbMessages }
@@ -139,6 +140,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 				.select(
 					'id, ticket_id, depends_on:tickets!ticket_dependencies_depends_on_ticket_id_fkey(id, token, title, status)'
 				),
+			supabase.from('ticket_dependency_notes').select('id, ticket_id, kind, label, detail'),
 			supabase.from('ticket_watchers').select('id, ticket_id, email, full_name'),
 			supabase
 				.from('ticket_attachments')
@@ -155,6 +157,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		const profiles = dbProfiles || [];
 		const events = dbEvents || [];
 		const dependencies = dbDependencies || [];
+		const dependencyNotes = dbDependencyNotes || [];
 		const watchers = dbWatchers || [];
 		const attachments = dbAttachments || [];
 		const messages = dbMessages || [];
@@ -207,6 +210,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 				delivery_lead_profile: profiles.find((p) => p.id === t.delivery_lead_id) ?? null,
 				events: ticketEvents,
 				dependencies: ticketDependencies,
+				dependencyNotes: dependencyNotes.filter((n) => n.ticket_id === t.id),
 				watchers: watchers.filter((w) => w.ticket_id === t.id),
 				attachments: attachments.filter((a) => a.ticket_id === t.id),
 				messages: messages

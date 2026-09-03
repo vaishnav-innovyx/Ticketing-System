@@ -7,7 +7,7 @@
 
 <svelte:head>
 	<link rel="icon" type="image/png" href={logo} />
-	<title>Resolv Service Desk</title>
+	<title>Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 {@render children()}

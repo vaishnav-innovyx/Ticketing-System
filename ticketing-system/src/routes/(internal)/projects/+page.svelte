@@ -50,7 +50,7 @@
 </script>
 
 <svelte:head>
-	<title>Projects - Nexus Service Desk</title>
+	<title>Projects - Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 <div class="space-y-6 md:space-y-8">

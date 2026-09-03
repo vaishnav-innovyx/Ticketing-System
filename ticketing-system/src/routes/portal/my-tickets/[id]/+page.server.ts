@@ -18,22 +18,24 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 	if (ticketError) throw error(500, ticketError.message);
 	if (!ticket) throw error(404, 'Ticket not found');
 
-	const [{ data: messages }, { data: attachments }, { data: watchers }, { data: dependencies }] = await Promise.all([
-		supabase
-			.from('ticket_messages')
-			.select('id, content, created_at, author:profiles(full_name, role)')
-			.eq('ticket_id', ticket.id)
-			.order('created_at', { ascending: true }),
-		supabase
-			.from('ticket_attachments')
-			.select('id, file_name, file_size_bytes, mime_type, message_id')
-			.eq('ticket_id', ticket.id),
-		supabase.from('ticket_watchers').select('id, email, full_name').eq('ticket_id', ticket.id),
-		supabase
-			.from('ticket_dependencies')
-			.select('depends_on:tickets!ticket_dependencies_depends_on_ticket_id_fkey(token, title, status)')
-			.eq('ticket_id', ticket.id)
-	]);
+	const [{ data: messages }, { data: attachments }, { data: watchers }, { data: dependencies }, { data: dependencyNotes }] =
+		await Promise.all([
+			supabase
+				.from('ticket_messages')
+				.select('id, content, created_at, author:profiles(full_name, role)')
+				.eq('ticket_id', ticket.id)
+				.order('created_at', { ascending: true }),
+			supabase
+				.from('ticket_attachments')
+				.select('id, file_name, file_size_bytes, mime_type, message_id')
+				.eq('ticket_id', ticket.id),
+			supabase.from('ticket_watchers').select('id, email, full_name').eq('ticket_id', ticket.id),
+			supabase
+				.from('ticket_dependencies')
+				.select('depends_on:tickets!ticket_dependencies_depends_on_ticket_id_fkey(token, title, status)')
+				.eq('ticket_id', ticket.id),
+			supabase.from('ticket_dependency_notes').select('id, kind, label, detail').eq('ticket_id', ticket.id)
+		]);
 
 	const blockers = (dependencies ?? [])
 		.map((d) => (Array.isArray(d.depends_on) ? d.depends_on[0] : d.depends_on))
@@ -44,7 +46,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 		messages: messages ?? [],
 		attachments: attachments ?? [],
 		watchers: watchers ?? [],
-		blockers
+		blockers,
+		dependencyNotes: dependencyNotes ?? []
 	};
 };
 

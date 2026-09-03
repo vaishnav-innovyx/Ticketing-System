@@ -4,7 +4,7 @@
 	import CategoryDonut from '$lib/components/internal/reports/CategoryDonut.svelte';
 	import ProjectHealthMatrix from '$lib/components/internal/reports/ProjectHealthMatrix.svelte';
 	import EffortVarianceBars from '$lib/components/internal/reports/EffortVarianceBars.svelte';
-	import { STATUS_LABEL, CATEGORY_LABEL, formatMetricHours, formatVariancePct } from '$lib/portal/ticketDisplay';
+	import { STATUS_LABEL, CATEGORY_LABEL, formatMetricHours, formatVariancePct, formatDateTime } from '$lib/portal/ticketDisplay';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -66,8 +66,14 @@
 	const clientById = $derived(new Map(clients.map((c) => [c.id, c])));
 	const projectById = $derived(new Map(projects.map((p) => [p.id, p])));
 
+	function statusLabelFor(t: { status: string; admin_rejected_at?: string | null }): string {
+		if (t.admin_rejected_at) return 'Rejected';
+		return STATUS_LABEL[t.status as keyof typeof STATUS_LABEL] ?? t.status;
+	}
+
 	// Executive KPI row
-	const activeTicketCount = $derived(filteredTickets.filter((t) => t.status !== 'closed').length);
+	const activeTicketCount = $derived(filteredTickets.filter((t) => t.status !== 'closed' && !t.admin_rejected_at).length);
+	const rejectedTicketCount = $derived(filteredTickets.filter((t) => !!t.admin_rejected_at).length);
 	const closedWithTarget = $derived(filteredTickets.filter((t) => t.status === 'closed' && t.closed_at && t.target_date));
 	const onTimePct = $derived(
 		closedWithTarget.length === 0
@@ -80,13 +86,16 @@
 	const avgCycleTime = $derived(average(filteredTickets.map((t) => t.cycleTimeHours)));
 	const avgEffortVariance = $derived(average(filteredTickets.map((t) => t.effortVariancePct)));
 
-	// Pipeline stage funnel
-	const funnelStages = $derived(
-		STATUS_ORDER.map((status) => ({
+	// Pipeline stage funnel — rejected tickets are dead-ended, so they're excluded from the live
+	// stage counts and broken out into their own bucket instead of inflating whatever stage they
+	// were rejected at.
+	const funnelStages = $derived([
+		...STATUS_ORDER.map((status) => ({
 			label: STATUS_LABEL[status],
-			count: filteredTickets.filter((t) => t.status === status).length
-		}))
-	);
+			count: filteredTickets.filter((t) => t.status === status && !t.admin_rejected_at).length
+		})),
+		{ label: 'Rejected', count: rejectedTicketCount }
+	]);
 
 	// Category distribution donut
 	const categorySegments = $derived(
@@ -103,7 +112,7 @@
 	const healthRows = $derived(
 		projectsInScope.map((project) => {
 			const projectTickets = filteredTickets.filter((t) => t.project_id === project.id);
-			const openTickets = projectTickets.filter((t) => t.status !== 'closed');
+			const openTickets = projectTickets.filter((t) => t.status !== 'closed' && !t.admin_rejected_at);
 			const overdue = openTickets.filter((t) => t.target_date && new Date(t.target_date) < new Date());
 			const client = clientById.get(project.client_id);
 			return {
@@ -159,23 +168,14 @@
 		try {
 			const XLSX = await import('xlsx');
 
-			const summaryAoa: (string | number)[][] = [
+			const ticketsAoa: (string | number)[][] = [
 				['Reports & Analytics Export'],
 				['Generated', new Date().toLocaleString()],
 				['Filters', filterSummary()],
 				[],
-				['Metric', 'Value'],
-				['Active Tickets', activeTicketCount],
-				['On-Time Delivery %', onTimePct !== null ? `${onTimePct.toFixed(1)}%` : 'N/A'],
-				['Avg PoC TAT', formatMetricHours(avgPocTat)],
-				['Avg Cycle Time', formatMetricHours(avgCycleTime)],
-				['Avg Effort Variance', formatVariancePct(avgEffortVariance)]
+				['Token', 'Title', 'Client', 'Project', 'Category', 'Status', 'Priority', 'Raised At', 'Closed At', 'PoC TAT', 'Req Duration', 'Approval Delay', 'Effort Variance', 'Cycle Time', 'Estimated Hours', 'Actual Hours']
 			];
-
-			const ticketsAoa: (string | number)[][] = [
-				['Token', 'Title', 'Client', 'Project', 'Category', 'Status', 'Priority', 'Raised At', 'PoC TAT', 'Req Duration', 'Approval Delay', 'Effort Variance', 'Cycle Time', 'Estimated Hours', 'Actual Hours']
-			];
-			for (const t of filteredTickets) {
+			for (const t of filteredTickets.filter((t) => !t.admin_rejected_at)) {
 				const client = clientById.get(t.client_id);
 				const project = projectById.get(t.project_id);
 				ticketsAoa.push([
@@ -184,9 +184,10 @@
 					client?.name ?? '',
 					project?.name ?? '',
 					CATEGORY_LABEL[t.category as keyof typeof CATEGORY_LABEL] ?? t.category,
-					STATUS_LABEL[t.status as keyof typeof STATUS_LABEL] ?? t.status,
+					statusLabelFor(t),
 					t.priority,
-					t.raised_at ?? '',
+					formatDateTime(t.raised_at),
+					formatDateTime(t.closed_at),
 					formatMetricHours(t.pocTatHours),
 					formatMetricHours(t.reqDurationHours),
 					formatMetricHours(t.approvalDelayHours),
@@ -197,17 +198,8 @@
 				]);
 			}
 
-			const healthAoa: (string | number)[][] = [
-				['Client', 'Project', 'Open', 'Bugs', 'Enhancements', 'Status']
-			];
-			for (const row of healthRows) {
-				healthAoa.push([row.clientName, row.projectName, row.open, row.bugs, row.enhancements, row.onTrack ? 'On Track' : 'Attention']);
-			}
-
 			const wb = XLSX.utils.book_new();
-			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryAoa), 'Summary');
 			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ticketsAoa), 'Tickets');
-			XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(healthAoa), 'Project Health');
 			XLSX.writeFile(wb, `reports-${new Date().toISOString().slice(0, 10)}.xlsx`);
 		} finally {
 			exporting = false;
@@ -216,7 +208,7 @@
 </script>
 
 <svelte:head>
-	<title>Nexus Service Desk - Reports & Analytics</title>
+	<title>Reports & Analytics - Resolv - Ticketing & Support System</title>
 </svelte:head>
 
 <div class="space-y-6 md:space-y-8">
@@ -314,7 +306,13 @@
 
 	<!-- Executive KPI Row -->
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 md:gap-5">
-		<KpiCard title="Active Tickets" value={activeTicketCount} icon="receipt_long" />
+		<KpiCard
+			title="Active Tickets"
+			value={activeTicketCount}
+			icon="receipt_long"
+			trendText={rejectedTicketCount > 0 ? `${rejectedTicketCount} rejected (excluded)` : undefined}
+			trendPositive={false}
+		/>
 		<KpiCard
 			title="On-Time Delivery"
 			value={onTimePct !== null ? `${onTimePct.toFixed(1)}%` : '—'}
@@ -429,8 +427,12 @@
 										{clientById.get(row.client_id)?.code ?? '—'} / {projectById.get(row.project_id)?.code ?? '—'}
 									</td>
 									<td class="px-5 py-3.5">
-										<span class="inline-flex rounded-md border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container)] px-2 py-0.5 text-label-xs font-semibold text-[var(--color-on-surface)]">
-											{STATUS_LABEL[row.status as keyof typeof STATUS_LABEL] ?? row.status}
+										<span
+											class="inline-flex rounded-md border px-2 py-0.5 text-label-xs font-semibold {row.admin_rejected_at
+												? 'border-transparent bg-[var(--color-error-container)] text-[var(--color-on-error-container)]'
+												: 'border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container)] text-[var(--color-on-surface)]'}"
+										>
+											{statusLabelFor(row)}
 										</span>
 									</td>
 									<td class="px-5 py-3.5 text-right font-mono text-body-xs tabular-nums">{formatMetricHours(row.pocTatHours)}</td>
