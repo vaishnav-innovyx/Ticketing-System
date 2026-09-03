@@ -198,13 +198,15 @@ export type StageEventKey =
 	| 'closed'
 	| 'reopened'
 	| 'pending_admin_approval'
-	| 'admin_rejected';
+	| 'admin_rejected'
+	| 'staff_assigned';
 
 export interface StageEmailParams {
 	event: StageEventKey;
 	ticket: EmailTicketInfo;
 	actorName?: string | null;
 	notes?: string | null;
+	roleLabel?: string | null;
 }
 
 /**
@@ -215,11 +217,12 @@ export function renderStageEmail(params: StageEmailParams): {
 	html: string;
 	badgeText: string;
 } {
-	const { event, ticket, actorName, notes } = params;
+	const { event, ticket, actorName, notes, roleLabel } = params;
 	const isRoot = event === 'ticket_raised';
 	const token = ticket.token;
 	const title = ticket.title;
-	const actionUrl = `${SITE_URL}/portal/my-tickets/${token}`;
+	const actionUrl =
+		event === 'staff_assigned' ? `${SITE_URL}/tickets` : `${SITE_URL}/portal/my-tickets/${token}`;
 
 	let subject = isRoot ? `[${token}] ${title}` : `Re: [${token}] ${title}`;
 	let badgeText = 'Status Update';
@@ -309,8 +312,8 @@ export function renderStageEmail(params: StageEmailParams): {
 			badgeText = 'In Delivery';
 			badgeBgColor = '#F3E8FF';
 			badgeTextColor = '#6B21A8';
-			headline = `Development Completed & Ready for Delivery`;
-			leadMessage = `Development on ticket ${token} is finished. The ticket is currently in delivery and quality verification.`;
+			headline = `Ready for Your Testing`;
+			leadMessage = `Development on ticket ${token} is complete and has been deployed. Please test the changes and let us know if everything looks good or if further adjustments are needed.`;
 			break;
 
 		case 'closed':
@@ -328,6 +331,15 @@ export function renderStageEmail(params: StageEmailParams): {
 			badgeTextColor = '#C2410C';
 			headline = `Ticket Reopened`;
 			leadMessage = `Ticket ${token} has been reopened and returned to active development.`;
+			break;
+
+		case 'staff_assigned':
+			subject = `Re: [${token}] You've been assigned: ${title}`;
+			badgeText = 'Assignment';
+			badgeBgColor = '#E0E7FF';
+			badgeTextColor = '#4338CA';
+			headline = `You've Been Assigned to Ticket ${token}`;
+			leadMessage = `${actorName || 'A team member'} has assigned you as the ${roleLabel || 'assignee'} for this ticket.`;
 			break;
 	}
 

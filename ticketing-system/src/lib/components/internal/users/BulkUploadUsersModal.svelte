@@ -19,12 +19,16 @@
 		open = $bindable(false),
 		clients = [],
 		projects = [],
-		allowedRoleScope = 'all'
+		allowedRoleScope = 'all',
+		fixedClient = null,
+		action = '?/bulkCreateUsers'
 	}: {
 		open: boolean;
 		clients?: ClientItem[];
 		projects?: ProjectItem[];
 		allowedRoleScope?: 'all' | 'client_only' | 'internal_only';
+		fixedClient?: ClientItem | null;
+		action?: string;
 	} = $props();
 
 	const CLIENT_ROLES = ['client_admin', 'project_admin', 'client_raiser', 'client_viewer'];
@@ -37,7 +41,10 @@
 				: [...INTERNAL_ROLES, ...CLIENT_ROLES]
 	);
 
-	const TEMPLATE_HEADERS = ['full_name', 'email', 'password', 'role', 'client_code', 'project_codes'];
+	// When a client is fixed (client-portal bulk upload), every row belongs to that org — no client_code column needed.
+	const TEMPLATE_HEADERS = $derived(
+		fixedClient ? ['full_name', 'email', 'password', 'role', 'project_codes'] : ['full_name', 'email', 'password', 'role', 'client_code', 'project_codes']
+	);
 
 	interface ParsedRow {
 		full_name: string;
@@ -92,14 +99,18 @@
 
 		const isClient = r.role.trim().startsWith('client_') || r.role.trim() === 'project_admin';
 		const code = r.client_code.trim().toUpperCase();
-		if (isClient) {
-			if (!code) errors.push('client_code required for client role');
-			else if (!clientByCode.has(code)) errors.push(`Unknown client_code "${r.client_code}"`);
-		} else if (code) {
-			errors.push('client_code must be blank for internal role');
+		let target: ClientItem | undefined;
+		if (fixedClient) {
+			target = fixedClient;
+		} else {
+			if (isClient) {
+				if (!code) errors.push('client_code required for client role');
+				else if (!clientByCode.has(code)) errors.push(`Unknown client_code "${r.client_code}"`);
+			} else if (code) {
+				errors.push('client_code must be blank for internal role');
+			}
+			target = clientByCode.get(code);
 		}
-
-		const target = clientByCode.get(code);
 		for (const pc of r.project_codes.split(/[,;|]/).map((s) => s.trim()).filter(Boolean)) {
 			const up = pc.toUpperCase();
 			if (!projectCodeSet.has(up)) {
@@ -161,11 +172,17 @@
 
 	async function downloadTemplate() {
 		const XLSX = await import('xlsx');
-		const example = [
-			TEMPLATE_HEADERS,
-			['Alex Morgan', 'alex@companyx.com', 'ChangeMe123!', 'specialist', '', ''],
-			['Priya Shah', 'priya@acme-client.com', 'ChangeMe123!', 'client_raiser', 'ACME', 'MBANK, POS']
-		];
+		const example = fixedClient
+			? [
+					TEMPLATE_HEADERS,
+					['Alex Morgan', 'alex@company.com', 'ChangeMe123!', 'client_raiser', ''],
+					['Priya Shah', 'priya@company.com', 'ChangeMe123!', 'project_admin', 'MBANK, POS']
+				]
+			: [
+					TEMPLATE_HEADERS,
+					['Alex Morgan', 'alex@companyx.com', 'ChangeMe123!', 'specialist', '', ''],
+					['Priya Shah', 'priya@acme-client.com', 'ChangeMe123!', 'client_raiser', 'ACME', 'MBANK, POS']
+				];
 		const ws = XLSX.utils.aoa_to_sheet(example);
 		const wb = XLSX.utils.book_new();
 		XLSX.utils.book_append_sheet(wb, ws, 'Users');
@@ -244,7 +261,9 @@
 						<p class="mt-1 font-mono text-[12px]">{TEMPLATE_HEADERS.join(' · ')}</p>
 						<ul class="mt-2 list-disc space-y-0.5 pl-5 text-[12px]">
 							<li><span class="font-mono">password</span> optional — defaults to <span class="font-mono">ChangeMe123!</span></li>
-							<li><span class="font-mono">client_code</span> required for <span class="font-mono">client_*</span> roles, blank for internal</li>
+							{#if !fixedClient}
+								<li><span class="font-mono">client_code</span> required for <span class="font-mono">client_*</span> roles, blank for internal</li>
+							{/if}
 							<li><span class="font-mono">project_codes</span> optional, separate multiple with <span class="font-mono">, ; |</span></li>
 						</ul>
 					</div>
@@ -275,7 +294,7 @@
 			{#if phase === 'parsed'}
 				<form
 					method="POST"
-					action="?/bulkCreateUsers"
+					{action}
 					use:enhance={() => {
 						submitting = true;
 						serverError = null;
@@ -314,7 +333,9 @@
 									<th class="px-3 py-2">Name</th>
 									<th class="px-3 py-2">Email</th>
 									<th class="px-3 py-2">Role</th>
-									<th class="px-3 py-2">Client</th>
+									{#if !fixedClient}
+										<th class="px-3 py-2">Client</th>
+									{/if}
 									<th class="px-3 py-2">Projects</th>
 									<th class="px-3 py-2">Status</th>
 								</tr>
@@ -326,7 +347,9 @@
 										<td class="px-3 py-2">{row.full_name}</td>
 										<td class="px-3 py-2 font-mono">{row.email}</td>
 										<td class="px-3 py-2">{row.role ? roleLabel(row.role) : '—'}</td>
-										<td class="px-3 py-2">{row.client_code || '—'}</td>
+										{#if !fixedClient}
+											<td class="px-3 py-2">{row.client_code || '—'}</td>
+										{/if}
 										<td class="px-3 py-2">{row.project_codes || '—'}</td>
 										<td class="px-3 py-2">
 											{#if row.valid}

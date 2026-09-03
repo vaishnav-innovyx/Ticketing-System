@@ -1,8 +1,16 @@
 import { fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
 import { requireInternalRole } from '$lib/server/authz';
-import { dispatchStageEmailNotification } from '$lib/server/email';
+import { dispatchStageEmailNotification, dispatchStaffAssignmentNotification, type StaffAssignmentTarget } from '$lib/server/email';
+import type { StageEventKey } from '$lib/server/emailTemplates';
 import type { Actions, PageServerLoad } from './$types';
+
+// The email template's key for entering PoC Triage is `poc_triaged`, not the
+// `poc_triage` ticket_status value — every other stage's status value and
+// event key already match.
+const STAGE_EVENT_KEY_OVERRIDES: Partial<Record<string, StageEventKey>> = {
+	poc_triage: 'poc_triaged'
+};
 
 const SEED_FALLBACK_TICKETS = [
 	{
@@ -319,6 +327,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const ticketId = String(formData.get('ticket_id') || '').trim();
 		const targetStatus = String(formData.get('target_status') || '').trim();
+		const message = String(formData.get('message') || '').trim();
 
 		if (!ticketId || !targetStatus) {
 			return fail(400, { error: 'Ticket ID and target status are required.' });
@@ -378,11 +387,16 @@ export const actions: Actions = {
 			return fail(500, { error: error.message });
 		}
 
+		if (message) {
+			await supabase.from('ticket_messages').insert({ ticket_id: ticketId, author_id: user.id, content: message });
+		}
+
 		// Dispatch stage notification email to Raiser (TO) and Project Admins/Dev/DM (CC)
 		dispatchStageEmailNotification({
 			ticketId,
-			event: targetStatus as any,
-			actorId: user.id
+			event: STAGE_EVENT_KEY_OVERRIDES[targetStatus] ?? (targetStatus as StageEventKey),
+			actorId: user.id,
+			notes: message || undefined
 		}).catch((err) => console.error(`Failed to dispatch ${targetStatus} email:`, err));
 
 		return { success: true };
@@ -431,6 +445,12 @@ export const actions: Actions = {
 		const pocId = String(formData.get('poc_id') || '').trim() || null;
 		const deliveryLeadId = String(formData.get('delivery_lead_id') || '').trim() || null;
 
+		const { data: currentTicket } = await supabaseAdmin
+			.from('tickets')
+			.select('specialist_id, poc_id, delivery_lead_id')
+			.eq('id', ticketId)
+			.maybeSingle();
+
 		const updateData: Record<string, string | null> = {};
 		if (formData.has('specialist_id')) updateData.specialist_id = specialistId;
 		if (formData.has('poc_id')) updateData.poc_id = pocId;
@@ -440,6 +460,33 @@ export const actions: Actions = {
 
 		if (error) {
 			return fail(500, { error: error.message });
+		}
+
+		// Only notify people who were actually newly assigned (id changed to a non-null
+		// value) - the assignment form always resubmits all three fields, so a naive
+		// "notify whoever is set now" would re-notify unchanged assignees on every save.
+		const roleChecks: Array<{
+			role: StaffAssignmentTarget['role'];
+			field: 'specialist_id' | 'poc_id' | 'delivery_lead_id';
+			newValue: string | null;
+		}> = [
+			{ role: 'specialist', field: 'specialist_id', newValue: specialistId },
+			{ role: 'poc', field: 'poc_id', newValue: pocId },
+			{ role: 'delivery_lead', field: 'delivery_lead_id', newValue: deliveryLeadId }
+		];
+		const newlyAssigned: StaffAssignmentTarget[] = currentTicket
+			? roleChecks
+					.filter(
+						({ field, newValue }) =>
+							formData.has(field) && newValue !== null && newValue !== currentTicket[field]
+					)
+					.map(({ role, newValue }) => ({ role, userId: newValue as string }))
+			: [];
+
+		if (newlyAssigned.length > 0) {
+			dispatchStaffAssignmentNotification(ticketId, newlyAssigned, user.id).catch((err) =>
+				console.error('Failed to dispatch staff assignment email:', err)
+			);
 		}
 
 		return { success: true };

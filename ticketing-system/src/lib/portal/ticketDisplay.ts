@@ -37,10 +37,10 @@ export const CATEGORY_LABEL: Record<TicketDbCategory, string> = {
 };
 
 export const PRIORITY_LABEL: Record<TicketDbPriority, string> = {
-	low: 'Low',
-	medium: 'Medium',
-	high: 'High',
-	critical: 'Critical'
+	low: 'P3 – Low',
+	medium: 'P2 – Medium',
+	high: 'P1 – High',
+	critical: 'P0 – Critical'
 };
 
 export const BLOCKED_BADGE_CLASS = 'bg-[var(--color-error-container)] text-[var(--color-on-error-container)]';

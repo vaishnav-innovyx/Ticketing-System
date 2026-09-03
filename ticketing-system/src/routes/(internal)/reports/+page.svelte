@@ -4,7 +4,7 @@
 	import CategoryDonut from '$lib/components/internal/reports/CategoryDonut.svelte';
 	import ProjectHealthMatrix from '$lib/components/internal/reports/ProjectHealthMatrix.svelte';
 	import EffortVarianceBars from '$lib/components/internal/reports/EffortVarianceBars.svelte';
-	import { STATUS_LABEL, CATEGORY_LABEL, formatMetricHours, formatVariancePct, formatDateTime } from '$lib/portal/ticketDisplay';
+	import { STATUS_LABEL, CATEGORY_LABEL, PRIORITY_LABEL, formatMetricHours, formatVariancePct, formatDateTime } from '$lib/portal/ticketDisplay';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -185,7 +185,7 @@
 					project?.name ?? '',
 					CATEGORY_LABEL[t.category as keyof typeof CATEGORY_LABEL] ?? t.category,
 					statusLabelFor(t),
-					t.priority,
+					PRIORITY_LABEL[t.priority as keyof typeof PRIORITY_LABEL] ?? t.priority,
 					formatDateTime(t.raised_at),
 					formatDateTime(t.closed_at),
 					formatMetricHours(t.pocTatHours),

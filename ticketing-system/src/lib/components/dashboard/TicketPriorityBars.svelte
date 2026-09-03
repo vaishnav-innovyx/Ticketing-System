@@ -7,10 +7,10 @@
 	}
 
 	const priorities: PriorityItem[] = [
-		{ label: 'Critical', count: 15, colorVar: 'var(--color-error)', percentage: 33 },
-		{ label: 'High', count: 32, colorVar: 'var(--color-primary-container)', percentage: 71 },
-		{ label: 'Medium', count: 45, colorVar: 'var(--color-primary-fixed-dim)', percentage: 100 },
-		{ label: 'Low', count: 18, colorVar: 'var(--color-surface-container-highest)', percentage: 40 }
+		{ label: 'P0 – Critical', count: 15, colorVar: 'var(--color-error)', percentage: 33 },
+		{ label: 'P1 – High', count: 32, colorVar: 'var(--color-primary-container)', percentage: 71 },
+		{ label: 'P2 – Medium', count: 45, colorVar: 'var(--color-primary-fixed-dim)', percentage: 100 },
+		{ label: 'P3 – Low', count: 18, colorVar: 'var(--color-surface-container-highest)', percentage: 40 }
 	];
 
 	let hoveredPriority = $state<string | null>(null);

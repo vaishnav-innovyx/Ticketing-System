@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { provisionUser } from '$lib/server/users';
 import type { Actions, PageServerLoad } from './$types';
 
 const CLIENT_MANAGEABLE_ROLES = ['client_admin', 'project_admin', 'client_raiser', 'client_viewer'];
@@ -13,14 +14,15 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		throw redirect(303, '/portal');
 	}
 
-	const [{ data: dbProfiles }, { data: dbProjects }, { data: dbMemberships }] = await Promise.all([
+	const [{ data: dbProfiles }, { data: dbProjects }, { data: dbMemberships }, { data: dbClient }] = await Promise.all([
 		supabase
 			.from('profiles')
 			.select('id, email, full_name, role, created_at')
 			.eq('client_id', profile.client_id)
 			.order('created_at', { ascending: false }),
 		supabase.from('projects').select('id, code, name, client_id').eq('client_id', profile.client_id).order('code'),
-		supabase.from('project_members').select('id, user_id, project_id')
+		supabase.from('project_members').select('id, user_id, project_id'),
+		supabase.from('clients').select('id, code, name').eq('id', profile.client_id).single()
 	]);
 
 	const projects = dbProjects ?? [];
@@ -42,7 +44,13 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		};
 	});
 
-	return { members, projects, clientId: profile.client_id, currentUserId: user.id };
+	return {
+		members,
+		projects,
+		clientId: profile.client_id,
+		client: dbClient ?? { id: profile.client_id, code: '', name: '' },
+		currentUserId: user.id
+	};
 };
 
 export const actions: Actions = {
@@ -98,6 +106,75 @@ export const actions: Actions = {
 		}
 
 		return { success: true, createdUserId: newUserId };
+	},
+
+	bulkCreateUsers: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const { data: callerProfile } = await supabase.from('profiles').select('role, client_id').eq('id', user.id).single();
+		if (!callerProfile || callerProfile.role !== 'client_admin' || !callerProfile.client_id) {
+			return fail(403, { error: 'You do not have permission to add teammates.' });
+		}
+
+		const formData = await request.formData();
+		let rows: Array<Record<string, string>>;
+		try {
+			rows = JSON.parse(String(formData.get('rows') || '[]'));
+		} catch {
+			return fail(400, { error: 'Malformed upload payload.' });
+		}
+		if (!Array.isArray(rows) || rows.length === 0) {
+			return fail(400, { error: 'No rows to import.' });
+		}
+
+		const { data: dbProjects } = await supabaseAdmin
+			.from('projects')
+			.select('id, code')
+			.eq('client_id', callerProfile.client_id);
+		const projects = dbProjects ?? [];
+
+		const results: Array<{ row: number; email: string; status: 'created' | 'failed'; error?: string }> = [];
+
+		for (let i = 0; i < rows.length; i++) {
+			const raw = rows[i];
+			const rowNum = i + 2; // +1 header, +1 to 1-index
+			const fullName = String(raw.full_name || '').trim();
+			const email = String(raw.email || '').trim().toLowerCase();
+			const password = String(raw.password || '').trim();
+			const role = String(raw.role || '').trim();
+			const projectCodes = String(raw.project_codes || '')
+				.split(/[,;|]/)
+				.map((s) => s.trim().toUpperCase())
+				.filter(Boolean);
+
+			const push = (status: 'created' | 'failed', error?: string) => results.push({ row: rowNum, email, status, error });
+
+			if (!fullName || !email) {
+				push('failed', 'Full name and email are required.');
+				continue;
+			}
+			if (!CLIENT_MANAGEABLE_ROLES.includes(role)) {
+				push('failed', `Unknown role "${role}".`);
+				continue;
+			}
+
+			const projectIds = projects.filter((p) => projectCodes.includes(p.code.toUpperCase())).map((p) => p.id);
+
+			const outcome = await provisionUser({
+				fullName,
+				email,
+				password,
+				role,
+				clientId: callerProfile.client_id,
+				projectIds
+			});
+			if ('error' in outcome) push('failed', outcome.error);
+			else push('created');
+		}
+
+		const created = results.filter((r) => r.status === 'created').length;
+		return { success: true, created, failed: results.length - created, results };
 	},
 
 	updateUser: async ({ request, locals: { supabase, safeGetSession } }) => {

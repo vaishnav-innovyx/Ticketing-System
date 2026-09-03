@@ -593,10 +593,10 @@
 
 					<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
 						{#each [
-							{ level: 'low', label: 'Low', desc: 'General question / minor', dot: 'bg-slate-400' },
-							{ level: 'medium', label: 'Medium', desc: 'Standard business impact', dot: 'bg-blue-500' },
-							{ level: 'high', label: 'High', desc: 'Important feature degraded', dot: 'bg-amber-500' },
-							{ level: 'critical', label: 'Critical', desc: 'System outage / blocker', dot: 'bg-rose-500' }
+							{ level: 'low', label: 'P3 – Low', desc: 'General question / minor', dot: 'bg-slate-400' },
+							{ level: 'medium', label: 'P2 – Medium', desc: 'Standard business impact', dot: 'bg-blue-500' },
+							{ level: 'high', label: 'P1 – High', desc: 'Important feature degraded', dot: 'bg-amber-500' },
+							{ level: 'critical', label: 'P0 – Critical', desc: 'System outage / blocker', dot: 'bg-rose-500' }
 						] as urg}
 							<label
 								class="flex flex-col gap-1.5 rounded-lg border p-3.5 cursor-pointer transition-all {priority === urg.level
@@ -706,19 +706,19 @@
 					</div>
 					<div class="space-y-2.5 text-body-sm">
 						<div class="flex justify-between items-center border-b border-[var(--color-border-subtle)] pb-2">
-							<span class="font-medium text-[var(--color-on-surface)]">Critical Impact</span>
+							<span class="font-medium text-[var(--color-on-surface)]">P0 – Critical Impact</span>
 							<span class="font-bold text-[var(--color-error)]">&lt; 1 hour</span>
 						</div>
 						<div class="flex justify-between items-center border-b border-[var(--color-border-subtle)] pb-2">
-							<span class="font-medium text-[var(--color-on-surface)]">High Priority</span>
+							<span class="font-medium text-[var(--color-on-surface)]">P1 – High Priority</span>
 							<span class="font-bold text-amber-600">&lt; 4 hours</span>
 						</div>
 						<div class="flex justify-between items-center border-b border-[var(--color-border-subtle)] pb-2">
-							<span class="font-medium text-[var(--color-on-surface)]">Medium Priority</span>
+							<span class="font-medium text-[var(--color-on-surface)]">P2 – Medium Priority</span>
 							<span class="font-bold text-[var(--color-on-surface)]">&lt; 12 hours</span>
 						</div>
 						<div class="flex justify-between items-center">
-							<span class="font-medium text-[var(--color-on-surface)]">Low / General</span>
+							<span class="font-medium text-[var(--color-on-surface)]">P3 – Low / General</span>
 							<span class="font-bold text-[var(--color-outline)]">&lt; 24 hours</span>
 						</div>
 					</div>

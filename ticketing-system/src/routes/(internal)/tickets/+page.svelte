@@ -434,10 +434,10 @@
 				class="h-10 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3 text-body-xs font-medium text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)]"
 			>
 				<option value="all">All Priorities</option>
-				<option value="critical">Critical</option>
-				<option value="high">High</option>
-				<option value="medium">Medium</option>
-				<option value="low">Low</option>
+				<option value="critical">{PRIORITY_LABEL.critical}</option>
+				<option value="high">{PRIORITY_LABEL.high}</option>
+				<option value="medium">{PRIORITY_LABEL.medium}</option>
+				<option value="low">{PRIORITY_LABEL.low}</option>
 			</select>
 
 			<!-- Client Filter -->

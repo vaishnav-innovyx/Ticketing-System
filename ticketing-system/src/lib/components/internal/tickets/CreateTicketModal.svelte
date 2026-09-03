@@ -239,10 +239,10 @@
 							bind:value={priority}
 							class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-body-md text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)]"
 						>
-							<option value="low">Low (Standard backlog)</option>
-							<option value="medium">Medium (Regular sprint cycle)</option>
-							<option value="high">High (Accelerated attention)</option>
-							<option value="critical">Critical (Immediate SLA block)</option>
+							<option value="low">P3 – Low (Standard backlog)</option>
+							<option value="medium">P2 – Medium (Regular sprint cycle)</option>
+							<option value="high">P1 – High (Accelerated attention)</option>
+							<option value="critical">P0 – Critical (Immediate SLA block)</option>
 						</select>
 					</div>
 				</div>

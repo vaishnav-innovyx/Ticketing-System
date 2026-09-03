@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import BulkUploadUsersModal from '$lib/components/internal/users/BulkUploadUsersModal.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -48,6 +49,7 @@
 
 	let isAdding = $state(false);
 	let isSubmittingAdd = $state(false);
+	let isBulkModalOpen = $state(false);
 
 	let viewingUser = $state<MemberItem | null>(null);
 	let editingUser = $state<MemberItem | null>(null);
@@ -143,17 +145,27 @@
 				Manage who at your company can raise tickets, review and approve estimates, and oversee project workflows.
 			</p>
 		</div>
-		<button
-			type="button"
-			onclick={() => {
-				isAdding = true;
-				errorMessage = null;
-			}}
-			class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary-container)] px-4 py-2.5 text-label-md font-semibold text-white hover:bg-[var(--color-primary)] transition-colors shadow-2xs cursor-pointer self-start sm:self-auto"
-		>
-			<span class="material-symbols-outlined text-[18px]">person_add</span>
-			<span>Add Teammate</span>
-		</button>
+		<div class="flex items-center gap-3 self-start sm:self-auto">
+			<button
+				type="button"
+				onclick={() => (isBulkModalOpen = true)}
+				class="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] px-4 py-2.5 text-label-md font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors cursor-pointer"
+			>
+				<span class="material-symbols-outlined text-[18px]">upload_file</span>
+				<span>Bulk Upload</span>
+			</button>
+			<button
+				type="button"
+				onclick={() => {
+					isAdding = true;
+					errorMessage = null;
+				}}
+				class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-primary-container)] px-4 py-2.5 text-label-md font-semibold text-white hover:bg-[var(--color-primary)] transition-colors shadow-2xs cursor-pointer"
+			>
+				<span class="material-symbols-outlined text-[18px]">person_add</span>
+				<span>Add Teammate</span>
+			</button>
+		</div>
 	</div>
 
 	<!-- Metric Cards -->
@@ -322,6 +334,15 @@
 </div>
 
 <!-- ========================= MODALS ========================= -->
+
+<!-- BULK UPLOAD TEAMMATES MODAL -->
+<BulkUploadUsersModal
+	bind:open={isBulkModalOpen}
+	{projects}
+	fixedClient={data.client}
+	allowedRoleScope="client_only"
+	action="?/bulkCreateUsers"
+/>
 
 <!-- 1. ADD TEAMMATE MODAL -->
 {#if isAdding}

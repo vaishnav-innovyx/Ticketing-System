@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import TriageMessageModal from './TriageMessageModal.svelte';
 	import {
 		STATUS_LABEL,
 		CATEGORY_LABEL,
@@ -95,6 +96,7 @@
 	let replyContent = $state('');
 	let lastMarkedReadTicketId = $state<string | null>(null);
 	let messagesContainer: HTMLDivElement | undefined = $state();
+	let showTriageMessageModal = $state(false);
 
 	$effect(() => {
 		// Track the message list so this re-runs whenever it changes, and scroll to the latest.
@@ -322,10 +324,9 @@
 
 					{#if ticket.status === 'raised'}
 						<button
-							type="submit"
-							name="target_status"
-							value="poc_triage"
+							type="button"
 							disabled={isSubmitting}
+							onclick={() => (showTriageMessageModal = true)}
 							class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer"
 						>
 							<span class="material-symbols-outlined text-[16px]">assignment</span>
@@ -429,17 +430,22 @@
 							name="manual_status"
 							class="h-9 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-2.5 text-body-xs text-[var(--color-on-surface)] outline-none"
 							onchange={(e) => {
-								const val = (e.target as HTMLSelectElement).value;
-								if (val) {
-									const form = (e.target as HTMLSelectElement).form;
-									if (form) {
-										const input = document.createElement('input');
-										input.type = 'hidden';
-										input.name = 'target_status';
-										input.value = val;
-										form.appendChild(input);
-										form.requestSubmit();
-									}
+								const select = e.target as HTMLSelectElement;
+								const val = select.value;
+								if (!val) return;
+								if (val === 'poc_triage') {
+									showTriageMessageModal = true;
+									select.value = '';
+									return;
+								}
+								const form = select.form;
+								if (form) {
+									const input = document.createElement('input');
+									input.type = 'hidden';
+									input.name = 'target_status';
+									input.value = val;
+									form.appendChild(input);
+									form.requestSubmit();
 								}
 							}}
 						>
@@ -1014,4 +1020,9 @@
 			</div>
 		</div>
 	</div>
+
+	<TriageMessageModal
+		bind:open={showTriageMessageModal}
+		ticket={{ id: ticket.id, token: ticket.token ?? ticket.id, title: ticket.title }}
+	/>
 {/if}

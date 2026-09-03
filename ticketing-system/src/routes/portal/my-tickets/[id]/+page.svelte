@@ -458,7 +458,7 @@
 							<div>
 								<span class="text-label-sm uppercase tracking-wider text-[var(--color-outline)]">Priority</span>
 								<div class="font-semibold text-[var(--color-on-surface)] mt-0.5 flex items-center gap-1.5">
-									<span class="h-2 w-2 rounded-full {ticket.priority === 'High' ? 'bg-amber-500' : ticket.priority === 'Critical' ? 'bg-rose-500' : 'bg-blue-500'}"></span>
+									<span class="h-2 w-2 rounded-full {data.ticket.priority === 'high' ? 'bg-amber-500' : data.ticket.priority === 'critical' ? 'bg-rose-500' : 'bg-blue-500'}"></span>
 									<span>{ticket.priority}</span>
 								</div>
 							</div>
