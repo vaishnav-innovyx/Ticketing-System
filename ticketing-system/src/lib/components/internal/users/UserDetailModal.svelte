@@ -257,8 +257,8 @@
 				{:else}
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-1">
 						{#each user.assigned_projects as project}
-							<div class="flex items-center gap-3 rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-lowest)] p-3 hover:border-indigo-300 transition-colors">
-								<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 font-mono text-xs font-bold text-indigo-700">
+							<div class="flex items-center gap-3 rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-lowest)] p-3 hover:border-indigo-300 transition-colors min-w-0" title={project.name}>
+								<div class="flex h-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 px-2.5 font-mono text-xs font-bold text-indigo-700">
 									{project.code}
 								</div>
 								<div class="min-w-0 flex-1">

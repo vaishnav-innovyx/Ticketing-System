@@ -11,11 +11,29 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	const { data: tickets } = await supabase
 		.from('tickets')
 		.select(
-			'id, token, title, status, raised_at, poc_responded_at, requirement_completed_at, client_approved_at, closed_at, estimated_hours, actual_hours'
+			'id, token, title, status, priority, category, raised_at, poc_responded_at, requirement_completed_at, client_approved_at, closed_at, estimated_hours, actual_hours'
 		)
 		.order('raised_at', { ascending: false });
 
-	const rows = (tickets ?? []).map((t) => ({
+	const ticketList = tickets ?? [];
+
+	// Dynamic KPI Calculations
+	const openTickets = ticketList.filter((t) => t.status !== 'closed');
+	const awaitingClient = ticketList.filter((t) => t.status === 'client_approval' || t.status === 'requirement_estimation');
+	const inDevelopment = ticketList.filter((t) => t.status === 'development');
+
+	const now = new Date();
+	const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+	const resolvedThisMonth = ticketList.filter((t) => t.closed_at && t.closed_at >= firstDayOfMonth);
+
+	const stats = {
+		openTicketsCount: openTickets.length,
+		awaitingClientCount: awaitingClient.length,
+		inDevelopmentCount: inDevelopment.length,
+		resolvedThisMonthCount: resolvedThisMonth.length
+	};
+
+	const rows = ticketList.map((t) => ({
 		id: t.id,
 		token: t.token,
 		title: t.title,
@@ -34,10 +52,9 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		cycleTime: { avgHours: average(rows.map((r) => r.cycleTimeHours)), count: countWhere('cycleTimeHours') }
 	};
 
-	// Most-recently-touched tickets that have at least one measurable stage duration.
 	const ticketMetricsRows = rows
 		.filter((r) => r.pocTatHours !== null || r.cycleTimeHours !== null)
 		.slice(0, 12);
 
-	return { deliveryMetrics, ticketMetricsRows };
+	return { stats, deliveryMetrics, ticketMetricsRows };
 };

@@ -5,14 +5,17 @@
 		color: string;
 	}
 
-	const segments: StatusSegment[] = [
-		{ label: 'New', count: 24, color: 'var(--color-primary-container)' },
-		{ label: 'Review', count: 14, color: 'var(--color-tertiary-container)' },
-		{ label: 'Dev', count: 12, color: 'var(--color-secondary)' },
-		{ label: 'Waiting', count: 8, color: 'var(--color-outline-variant)' }
+	let { segments = [] }: { segments?: StatusSegment[] } = $props();
+
+	const fallbackSegments: StatusSegment[] = [
+		{ label: 'New', count: 0, color: 'var(--color-primary-container)' },
+		{ label: 'Review', count: 0, color: 'var(--color-tertiary-container)' },
+		{ label: 'Dev', count: 0, color: 'var(--color-secondary)' },
+		{ label: 'Waiting', count: 0, color: 'var(--color-outline-variant)' }
 	];
 
-	let total = $derived(segments.reduce((acc, s) => acc + s.count, 0));
+	const displaySegments = $derived(segments.length > 0 ? segments : fallbackSegments);
+	let total = $derived(displaySegments.reduce((acc, s) => acc + s.count, 0));
 	let hoveredSegment = $state<StatusSegment | null>(null);
 
 	// Donut SVG calculations
@@ -24,8 +27,8 @@
 	// Calculate stroke dash offsets
 	let computedArcs = $derived(() => {
 		let accumulated = 0;
-		return segments.map((seg) => {
-			const ratio = seg.count / total;
+		return displaySegments.map((seg) => {
+			const ratio = total > 0 ? seg.count / total : 0;
 			const dashLength = ratio * circumference;
 			const offset = -accumulated;
 			accumulated += dashLength;
@@ -95,7 +98,7 @@
 
 	<!-- Status Legend -->
 	<div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 pt-2 border-t border-[var(--color-outline-variant)]/20">
-		{#each segments as seg}
+		{#each displaySegments as seg}
 			<div
 				class="flex items-center justify-between gap-2 rounded-md p-1 transition-colors hover:bg-[var(--color-surface-container-low)]"
 				onmouseenter={() => (hoveredSegment = seg)}

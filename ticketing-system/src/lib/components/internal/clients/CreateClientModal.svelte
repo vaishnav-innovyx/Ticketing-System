@@ -44,9 +44,21 @@
 		}
 	});
 
+	let createdTokenData = $state<{
+		rawToken: string;
+		tokenName: string;
+		clientName: string;
+		clientCode: string;
+		createdClientId?: string;
+	} | null>(null);
+	let copiedToken = $state(false);
+
 	function handleClose() {
+		if (createdTokenData?.createdClientId && onClientCreated) {
+			onClientCreated(createdTokenData.createdClientId);
+		}
 		open = false;
-		errorMessage = null;
+		resetForm();
 	}
 
 	function resetForm() {
@@ -60,6 +72,19 @@
 		projectCode = '';
 		projectCodeManuallyEdited = false;
 		errorMessage = null;
+		createdTokenData = null;
+		copiedToken = false;
+	}
+
+	async function copyToken() {
+		if (!createdTokenData?.rawToken) return;
+		try {
+			await navigator.clipboard.writeText(createdTokenData.rawToken);
+			copiedToken = true;
+			setTimeout(() => (copiedToken = false), 3000);
+		} catch (err) {
+			console.error('Failed to copy token:', err);
+		}
 	}
 </script>
 
@@ -83,64 +108,142 @@
 		<div
 			class="relative w-full max-w-lg rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] p-6 shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200"
 		>
-			<!-- Modal Header -->
-			<div class="flex items-center justify-between border-b border-[var(--color-outline-variant)]/40 pb-4">
-				<div class="flex items-center gap-3">
-					<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary-fixed)] text-[var(--color-on-primary-fixed)]">
-						<span class="material-symbols-outlined text-[22px]">add_business</span>
+			{#if createdTokenData}
+				<!-- Created Token Success Screen -->
+				<div class="space-y-5 animate-in fade-in duration-200">
+					<div class="flex items-center gap-3 border-b border-[var(--color-outline-variant)]/40 pb-4">
+						<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+							<span class="material-symbols-outlined text-[24px]">key</span>
+						</div>
+						<div>
+							<h2 class="text-title-lg font-bold text-[var(--color-on-surface)]">
+								Client & API Key Created!
+							</h2>
+							<p class="text-body-xs text-[var(--color-on-surface-variant)]">
+								Organization <strong class="text-[var(--color-on-surface)]">{createdTokenData.clientName}</strong> ({createdTokenData.clientCode}) is ready.
+							</p>
+						</div>
 					</div>
-					<div>
-						<h2 class="text-title-lg font-bold text-[var(--color-on-surface)]">
-							New Client Organization
-						</h2>
-						<p class="text-body-xs text-[var(--color-on-surface-variant)]">
-							Set up tenant workspace, seat quota, and initial project.
+
+					<div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
+						<div class="flex items-center justify-between">
+							<span class="text-label-sm font-semibold uppercase tracking-wider text-emerald-900">
+								{createdTokenData.tokenName}
+							</span>
+							<span class="rounded bg-emerald-200/80 px-2 py-0.5 text-[10px] font-bold text-emerald-900 uppercase">
+								Active Token
+							</span>
+						</div>
+
+						<div class="flex items-center gap-2">
+							<input
+								type="text"
+								readonly
+								value={createdTokenData.rawToken}
+								class="w-full rounded-lg border border-emerald-300 bg-white px-3.5 py-2.5 font-mono text-body-sm font-bold text-emerald-950 outline-none select-all"
+							/>
+							<button
+								type="button"
+								onclick={copyToken}
+								class="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-emerald-700 px-4 text-label-sm font-bold text-white shadow-sm hover:bg-emerald-800 transition-colors cursor-pointer"
+							>
+								<span class="material-symbols-outlined text-[18px]">{copiedToken ? 'check' : 'content_copy'}</span>
+								<span>{copiedToken ? 'Copied!' : 'Copy'}</span>
+							</button>
+						</div>
+
+						<p class="text-[12px] text-emerald-800 leading-snug">
+							<strong>Note:</strong> Paste this token into your Dashboard's <code class="rounded bg-emerald-100 px-1 py-0.5 font-mono">Backend/.env</code> as <code class="rounded bg-emerald-100 px-1 py-0.5 font-mono">TICKETING_API_TOKEN</code>. For security, this raw key will not be shown again.
 						</p>
 					</div>
+
+					<div class="flex justify-end pt-2">
+						<button
+							type="button"
+							onclick={handleClose}
+							class="nexus-primary-button h-10 px-6 text-label-md shadow-sm"
+						>
+							Done
+						</button>
+					</div>
+				</div>
+			{:else}
+				<!-- Modal Header -->
+				<div class="flex items-center justify-between border-b border-[var(--color-outline-variant)]/40 pb-4">
+					<div class="flex items-center gap-3">
+						<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary-fixed)] text-[var(--color-on-primary-fixed)]">
+							<span class="material-symbols-outlined text-[22px]">add_business</span>
+						</div>
+						<div>
+							<h2 class="text-title-lg font-bold text-[var(--color-on-surface)]">
+								New Client Organization
+							</h2>
+							<p class="text-body-xs text-[var(--color-on-surface-variant)]">
+								Set up tenant workspace, seat quota, and initial project.
+							</p>
+						</div>
+					</div>
+
+					<button
+						type="button"
+						class="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-on-surface-variant)] transition-colors hover:bg-[var(--color-surface-container)] hover:text-[var(--color-on-surface)]"
+						onclick={handleClose}
+						aria-label="Close modal"
+					>
+						<span class="material-symbols-outlined text-[20px]">close</span>
+					</button>
 				</div>
 
-				<button
-					type="button"
-					class="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-on-surface-variant)] transition-colors hover:bg-[var(--color-surface-container)] hover:text-[var(--color-on-surface)]"
-					onclick={handleClose}
-					aria-label="Close modal"
-				>
-					<span class="material-symbols-outlined text-[20px]">close</span>
-				</button>
-			</div>
+				<!-- Error Alert -->
+				{#if errorMessage}
+					<div class="mt-4 flex items-center gap-2 rounded-lg border border-[var(--color-error)]/40 bg-[var(--color-error)]/10 px-4 py-3 text-body-sm text-[var(--color-error)]">
+						<span class="material-symbols-outlined shrink-0 text-[18px]">error</span>
+						<span>{errorMessage}</span>
+					</div>
+				{/if}
 
-			<!-- Error Alert -->
-			{#if errorMessage}
-				<div class="mt-4 flex items-center gap-2 rounded-lg border border-[var(--color-error)]/40 bg-[var(--color-error)]/10 px-4 py-3 text-body-sm text-[var(--color-error)]">
-					<span class="material-symbols-outlined shrink-0 text-[18px]">error</span>
-					<span>{errorMessage}</span>
-				</div>
-			{/if}
+				<!-- Form -->
+				<form
+					method="POST"
+					action="?/createClient"
+					use:enhance={() => {
+						isSubmitting = true;
+						errorMessage = null;
+						return async ({ result, update }) => {
+							isSubmitting = false;
+							if (result.type === 'failure') {
+								errorMessage = (result.data as { error?: string })?.error ?? 'Failed to create client.';
+							} else if (result.type === 'success') {
+								const data = result.data as {
+									createdClientId?: string;
+									rawToken?: string;
+									tokenName?: string;
+									clientName?: string;
+									clientCode?: string;
+								};
 
-			<!-- Form -->
-			<form
-				method="POST"
-				action="?/createClient"
-				use:enhance={() => {
-					isSubmitting = true;
-					errorMessage = null;
-					return async ({ result, update }) => {
-						isSubmitting = false;
-						if (result.type === 'failure') {
-							errorMessage = (result.data as { error?: string })?.error ?? 'Failed to create client.';
-						} else if (result.type === 'success') {
-							const createdId = (result.data as { createdClientId?: string })?.createdClientId;
-							resetForm();
-							open = false;
-							if (createdId && onClientCreated) {
-								onClientCreated(createdId);
+								if (data?.rawToken) {
+									createdTokenData = {
+										rawToken: data.rawToken,
+										tokenName: data.tokenName || 'Default API Token',
+										clientName: data.clientName || name,
+										clientCode: data.clientCode || code,
+										createdClientId: data.createdClientId
+									};
+								} else {
+									const createdId = data?.createdClientId;
+									resetForm();
+									open = false;
+									if (createdId && onClientCreated) {
+										onClientCreated(createdId);
+									}
+								}
+								await update();
 							}
-							await update();
-						}
-					};
-				}}
-				class="mt-5 space-y-4"
-			>
+						};
+					}}
+					class="mt-5 space-y-4"
+				>
 				<!-- Organization Name -->
 				<div class="space-y-1.5">
 					<label for="client-name" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
@@ -321,6 +424,7 @@
 					</button>
 				</div>
 			</form>
-		</div>
+		{/if}
 	</div>
+</div>
 {/if}

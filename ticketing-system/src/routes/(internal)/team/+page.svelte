@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import CreateUserModal from '$lib/components/internal/users/CreateUserModal.svelte';
 	import BulkUploadUsersModal from '$lib/components/internal/users/BulkUploadUsersModal.svelte';
 	import EditUserModal from '$lib/components/internal/users/EditUserModal.svelte';
@@ -31,8 +32,12 @@
 	let isCreateModalOpen = $state(false);
 	let isBulkModalOpen = $state(false);
 	let selectedUser = $state<MemberItem | null>(null);
+	let deletingUser = $state<MemberItem | null>(null);
 	let isDetailModalOpen = $state(false);
 	let isEditModalOpen = $state(false);
+	let isSubmittingDelete = $state(false);
+	let errorMessage = $state<string | null>(null);
+	let successMessage = $state<string | null>(null);
 
 	const members = $derived<MemberItem[]>(data.members || []);
 	const clients = $derived(data.clients || []);
@@ -130,6 +135,27 @@
 			</button>
 		</div>
 	</div>
+
+	<!-- Notifications / Alerts -->
+	{#if errorMessage}
+		<div class="flex items-center justify-between gap-2 rounded-lg border border-[var(--color-error)]/40 bg-[var(--color-error)]/10 px-4 py-3 text-body-sm text-[var(--color-error)]">
+			<div class="flex items-center gap-2">
+				<span class="material-symbols-outlined text-[20px]">error</span>
+				<span>{errorMessage}</span>
+			</div>
+			<button type="button" onclick={() => (errorMessage = null)} class="text-body-sm font-semibold hover:underline cursor-pointer">Dismiss</button>
+		</div>
+	{/if}
+
+	{#if successMessage}
+		<div class="flex items-center justify-between gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-body-sm text-emerald-800">
+			<div class="flex items-center gap-2">
+				<span class="material-symbols-outlined text-[20px] text-emerald-600">check_circle</span>
+				<span>{successMessage}</span>
+			</div>
+			<button type="button" onclick={() => (successMessage = null)} class="text-body-sm font-semibold hover:underline cursor-pointer">Dismiss</button>
+		</div>
+	{/if}
 
 	<!-- Stats Grid -->
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-5">
@@ -254,7 +280,7 @@
 	</div>
 
 	<!-- Team Members Table -->
-	<div class="overflow-hidden rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] shadow-xs">
+	<div class="overflow-x-auto rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] shadow-xs">
 		<table class="w-full text-left text-body-sm">
 			<thead class="border-b border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-low)] text-label-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
 				<tr>
@@ -262,8 +288,8 @@
 					<th class="px-5 py-3.5">Role</th>
 					<th class="px-5 py-3.5">Organization</th>
 					<th class="px-5 py-3.5">Assigned Projects</th>
-					<th class="px-5 py-3.5">Added Date</th>
-					<th class="px-5 py-3.5 text-right">Actions</th>
+					<th class="px-5 py-3.5 whitespace-nowrap">Added Date</th>
+					<th class="px-5 py-3.5 text-right whitespace-nowrap">Actions</th>
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-[var(--color-outline-variant)]/30">
@@ -345,11 +371,11 @@
 						</td>
 
 						<!-- Actions -->
-						<td class="px-5 py-4 text-right">
-							<div class="inline-flex items-center gap-1.5">
+						<td class="px-5 py-4 text-right whitespace-nowrap">
+							<div class="inline-flex items-center justify-end gap-1.5">
 								<button
 									type="button"
-									class="nexus-secondary-button h-8 px-2.5 text-label-xs font-semibold cursor-pointer hover:border-[var(--color-primary)]"
+									class="nexus-secondary-button h-8 px-3 text-label-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer hover:border-[var(--color-primary)]"
 									onclick={() => {
 										selectedUser = member;
 										isDetailModalOpen = true;
@@ -359,7 +385,7 @@
 								</button>
 								<button
 									type="button"
-									class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-outline-variant)]/60 text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
+									class="flex h-8 w-8 items-center justify-center shrink-0 rounded-lg border border-[var(--color-outline-variant)]/60 text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
 									title="Edit User"
 									onclick={() => {
 										selectedUser = member;
@@ -368,6 +394,21 @@
 								>
 									<span class="material-symbols-outlined text-[16px]">edit</span>
 								</button>
+
+								{#if member.id !== data.currentUserId}
+									<button
+										type="button"
+										class="flex h-8 w-8 items-center justify-center shrink-0 rounded-lg border border-[var(--color-outline-variant)]/60 text-[var(--color-on-surface-variant)] hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)] hover:border-[var(--color-error)]/30 transition-colors cursor-pointer"
+										title="Delete User"
+										onclick={() => {
+											deletingUser = member;
+										}}
+									>
+										<span class="material-symbols-outlined text-[16px]">delete</span>
+									</button>
+								{:else}
+									<span class="p-1 px-2 text-label-xs font-semibold whitespace-nowrap text-purple-700 bg-purple-50 rounded-md border border-purple-200">You</span>
+								{/if}
 							</div>
 						</td>
 					</tr>
@@ -419,4 +460,62 @@
 		{projects}
 		allowedRoleScope="all"
 	/>
+
+	<!-- Delete User Confirmation Modal -->
+	{#if deletingUser}
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+			<div class="w-full max-w-md rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] p-6 shadow-xl space-y-5 animate-in fade-in zoom-in-95">
+				<div class="flex items-center gap-3">
+					<div class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-error)]/10 text-[var(--color-error)]">
+						<span class="material-symbols-outlined text-[24px]">warning</span>
+					</div>
+					<div>
+						<h2 class="text-title-md font-bold text-[var(--color-on-surface)]">Delete User Account</h2>
+						<p class="text-body-xs text-[var(--color-on-surface-variant)]">Permanent deletion from system</p>
+					</div>
+				</div>
+
+				<p class="text-body-sm text-[var(--color-on-surface-variant)]">
+					Are you sure you want to permanently delete <strong class="text-[var(--color-on-surface)]">{deletingUser.full_name || deletingUser.email}</strong> (<span class="font-mono text-xs">{deletingUser.email}</span>)? Their profile, project memberships, and authentication credentials will be removed.
+				</p>
+
+				<form
+					method="POST"
+					action="?/deleteUser"
+					use:enhance={() => {
+						isSubmittingDelete = true;
+						errorMessage = null;
+						return async ({ result, update }) => {
+							isSubmittingDelete = false;
+							if (result.type === 'failure') {
+								errorMessage = (result.data as { error?: string })?.error ?? 'Failed to delete user account.';
+							} else if (result.type === 'success') {
+								deletingUser = null;
+								successMessage = 'User account deleted successfully.';
+							}
+							await update();
+						};
+					}}
+					class="flex items-center justify-end gap-2.5 pt-2 border-t border-[var(--color-outline-variant)]/40"
+				>
+					<input type="hidden" name="user_id" value={deletingUser.id} />
+					<button
+						type="button"
+						onclick={() => (deletingUser = null)}
+						class="nexus-secondary-button h-9 px-4 text-label-md cursor-pointer"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						disabled={isSubmittingDelete}
+						class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-error)] px-5 py-2 text-label-md font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
+					>
+						<span class="material-symbols-outlined text-[18px]">delete</span>
+						<span>{isSubmittingDelete ? 'Deleting...' : 'Delete User'}</span>
+					</button>
+				</form>
+			</div>
+		</div>
+	{/if}
 </div>

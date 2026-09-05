@@ -1,75 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
+import { generateApiToken } from '$lib/server/apiAuth';
 import type { Actions, PageServerLoad } from './$types';
-
-const SEED_FALLBACK_CLIENTS = [
-	{
-		id: '11111111-1111-1111-1111-111111111111',
-		code: 'ACME',
-		name: 'Acme Corp',
-		seat_quota: 10,
-		created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-		projects: [
-			{ id: 'p1', client_id: '11111111-1111-1111-1111-111111111111', code: 'MBANK', name: 'Acme Mobile Banking', created_at: new Date(Date.now() - 28 * 86400000).toISOString() },
-			{ id: 'p2', client_id: '11111111-1111-1111-1111-111111111111', code: 'POS', name: 'Acme Point of Sale', created_at: new Date(Date.now() - 25 * 86400000).toISOString() },
-			{ id: 'p3', client_id: '11111111-1111-1111-1111-111111111111', code: 'CRM', name: 'Acme CRM', created_at: new Date(Date.now() - 20 * 86400000).toISOString() },
-			{ id: 'p4', client_id: '11111111-1111-1111-1111-111111111111', code: 'WEB', name: 'Acme Website', created_at: new Date(Date.now() - 15 * 86400000).toISOString() }
-		],
-		members: [
-			{ id: 'u1', email: 'admin@acme-client.com', full_name: 'Acme Admin', role: 'client_admin', client_id: '11111111-1111-1111-1111-111111111111', created_at: new Date(Date.now() - 28 * 86400000).toISOString() },
-			{ id: 'u2', email: 'raiser@acme-client.com', full_name: 'Acme Raiser', role: 'client_raiser', client_id: '11111111-1111-1111-1111-111111111111', created_at: new Date(Date.now() - 27 * 86400000).toISOString() },
-			{ id: 'u3', email: 'viewer@acme-client.com', full_name: 'Acme Viewer', role: 'client_viewer', client_id: '11111111-1111-1111-1111-111111111111', created_at: new Date(Date.now() - 26 * 86400000).toISOString() }
-		],
-		tickets: [
-			{ id: 't1', title: 'Login button unresponsive on iOS', description: 'Tapping login does nothing on iOS 18.', category: 'bug', status: 'raised', project_id: 'p1', estimated_hours: null, actual_hours: null, created_at: new Date(Date.now() - 1 * 86400000).toISOString() },
-			{ id: 't2', title: 'Balance shows stale value after transfer', description: 'Balance not refreshing post-transfer.', category: 'bug', status: 'poc_triage', project_id: 'p1', estimated_hours: null, actual_hours: null, created_at: new Date(Date.now() - 3 * 86400000).toISOString() },
-			{ id: 't3', title: 'Add biometric login', description: 'Support Face ID / fingerprint login.', category: 'enhancement', status: 'requirement_estimation', project_id: 'p1', estimated_hours: null, actual_hours: null, created_at: new Date(Date.now() - 6 * 86400000).toISOString() },
-			{ id: 't4', title: 'Add spending analytics widget', description: 'Monthly spend breakdown chart on dashboard.', category: 'enhancement', status: 'client_approval', project_id: 'p1', estimated_hours: 16, actual_hours: null, created_at: new Date(Date.now() - 9 * 86400000).toISOString() },
-			{ id: 't5', title: 'Crash on opening statements tab', description: 'App crashes when opening PDF statement.', category: 'bug', status: 'development', project_id: 'p1', estimated_hours: 8, actual_hours: null, created_at: new Date(Date.now() - 12 * 86400000).toISOString() },
-			{ id: 't6', title: 'KT: New payments module', description: 'Knowledge transfer session for payments rewrite.', category: 'kt', status: 'delivery', project_id: 'p1', estimated_hours: 24, actual_hours: 22, created_at: new Date(Date.now() - 15 * 86400000).toISOString() },
-			{ id: 't7', title: 'Training: Admin console walkthrough', description: 'Recorded walkthrough for client admins.', category: 'training', status: 'closed', project_id: 'p1', estimated_hours: 4, actual_hours: 5, created_at: new Date(Date.now() - 20 * 86400000).toISOString() }
-		]
-	},
-	{
-		id: '22222222-2222-2222-2222-222222222222',
-		code: 'GLOB',
-		name: 'Globex Inc',
-		seat_quota: 10,
-		created_at: new Date(Date.now() - 45 * 86400000).toISOString(),
-		projects: [
-			{ id: 'p5', client_id: '22222222-2222-2222-2222-222222222222', code: 'ERP', name: 'Globex ERP', created_at: new Date(Date.now() - 40 * 86400000).toISOString() },
-			{ id: 'p6', client_id: '22222222-2222-2222-2222-222222222222', code: 'HR', name: 'Globex HR Portal', created_at: new Date(Date.now() - 38 * 86400000).toISOString() },
-			{ id: 'p7', client_id: '22222222-2222-2222-2222-222222222222', code: 'LOG', name: 'Globex Logistics', created_at: new Date(Date.now() - 35 * 86400000).toISOString() }
-		],
-		members: [
-			{ id: 'u4', email: 'it-lead@globex.com', full_name: 'Marcus Vance', role: 'client_admin', client_id: '22222222-2222-2222-2222-222222222222', created_at: new Date(Date.now() - 40 * 86400000).toISOString() },
-			{ id: 'u5', email: 'operations@globex.com', full_name: 'Elena Rostova', role: 'client_raiser', client_id: '22222222-2222-2222-2222-222222222222', created_at: new Date(Date.now() - 35 * 86400000).toISOString() }
-		],
-		tickets: [
-			{ id: 't8', title: 'Inventory count mismatch on sync', description: 'Logistics sync delayed by 2 hours.', category: 'bug', status: 'development', project_id: 'p7', estimated_hours: 12, actual_hours: null, created_at: new Date(Date.now() - 2 * 86400000).toISOString() },
-			{ id: 't9', title: 'HR Annual leave calculation update', description: 'Support carry-over cap logic.', category: 'enhancement', status: 'requirement_estimation', project_id: 'p6', estimated_hours: null, actual_hours: null, created_at: new Date(Date.now() - 5 * 86400000).toISOString() }
-		]
-	},
-	{
-		id: '33333333-3333-3333-3333-333333333333',
-		code: 'TECHCO',
-		name: 'TechCo Ltd',
-		seat_quota: 10,
-		created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-		projects: [
-			{ id: 'p8', client_id: '33333333-3333-3333-3333-333333333333', code: 'APP', name: 'TechCo Mobile App', created_at: new Date(Date.now() - 55 * 86400000).toISOString() },
-			{ id: 'p9', client_id: '33333333-3333-3333-3333-333333333333', code: 'API', name: 'TechCo Public API', created_at: new Date(Date.now() - 50 * 86400000).toISOString() },
-			{ id: 'p10', client_id: '33333333-3333-3333-3333-333333333333', code: 'INFRA', name: 'TechCo Infrastructure', created_at: new Date(Date.now() - 45 * 86400000).toISOString() }
-		],
-		members: [
-			{ id: 'u6', email: 'devops@techco.io', full_name: 'David Chen', role: 'client_admin', client_id: '33333333-3333-3333-3333-333333333333', created_at: new Date(Date.now() - 55 * 86400000).toISOString() }
-		],
-		tickets: [
-			{ id: 't10', title: 'API Rate limiter returning 429 prematurely', description: 'Spike in error rate on public gateway.', category: 'bug', status: 'poc_triage', project_id: 'p9', estimated_hours: null, actual_hours: null, created_at: new Date(Date.now() - 1 * 86400000).toISOString() },
-			{ id: 't11', title: 'OAuth2 refresh token rotation upgrade', description: 'Implement RFC 6749 refresh rotation.', category: 'enhancement', status: 'closed', project_id: 'p9', estimated_hours: 20, actual_hours: 18, created_at: new Date(Date.now() - 14 * 86400000).toISOString() }
-		]
-	}
-];
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	try {
@@ -80,7 +12,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			.order('name');
 
 		if (clientsError || !dbClients || dbClients.length === 0) {
-			return { clients: SEED_FALLBACK_CLIENTS };
+			return { clients: [] };
 		}
 
 		// Fetch projects, profiles, and tickets in parallel
@@ -102,15 +34,15 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 
 			return {
 				...client,
-				projects: clientProjects.length > 0 ? clientProjects : (SEED_FALLBACK_CLIENTS.find(c => c.id === client.id)?.projects || []),
-				members: clientMembers.length > 0 ? clientMembers : (SEED_FALLBACK_CLIENTS.find(c => c.id === client.id)?.members || []),
-				tickets: clientTickets.length > 0 ? clientTickets : (SEED_FALLBACK_CLIENTS.find(c => c.id === client.id)?.tickets || [])
+				projects: clientProjects,
+				members: clientMembers,
+				tickets: clientTickets
 			};
 		});
 
 		return { clients };
 	} catch {
-		return { clients: SEED_FALLBACK_CLIENTS };
+		return { clients: [] };
 	}
 };
 
@@ -166,20 +98,79 @@ export const actions: Actions = {
 			return fail(500, { error: clientError.message, name, code, seatQuota });
 		}
 
-		// Optionally insert initial project if specified
-		if (projectName && projectCode) {
-			const { error: projectError } = await supabase.from('projects').insert({
-				client_id: newClient.id,
-				name: projectName,
-				code: projectCode
-			});
+		// Auto-create initial project and API ingestion token for the client
+		const effectiveProjectName = projectName || `${name} Task Dashboard`;
+		const effectiveProjectCode = projectCode || `${code.slice(0, 4)}TASK`.slice(0, 8);
 
-			if (projectError) {
-				console.error('Failed to create initial project for client:', projectError);
+		const { data: newProject, error: projectError } = await supabase
+			.from('projects')
+			.insert({
+				client_id: newClient.id,
+				name: effectiveProjectName,
+				code: effectiveProjectCode
+			})
+			.select('id, code, name')
+			.single();
+
+		if (!projectError && newProject) {
+			try {
+				const { rawToken, tokenHash, tokenPrefix } = generateApiToken(newClient.code);
+				const tokenName = `${name} Default API Key`;
+
+				const { error: tokenError } = await supabaseAdmin.from('api_tokens').insert({
+					client_id: newClient.id,
+					project_id: newProject.id,
+					name: tokenName,
+					token_hash: tokenHash,
+					token_prefix: tokenPrefix,
+					created_by: user.id
+				});
+
+				if (!tokenError) {
+					return {
+						success: true,
+						createdClientId: newClient.id,
+						rawToken,
+						tokenName,
+						clientName: name,
+						clientCode: newClient.code
+					};
+				}
+			} catch (err) {
+				console.error('Failed to auto-generate API token for new client:', err);
 			}
 		}
 
 		return { success: true, createdClientId: newClient.id };
+	},
+
+	deleteClient: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		// Verify super_admin role
+		const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+		if (profile?.role !== 'super_admin') {
+			return fail(403, { error: 'Only Super Admins are authorized to delete client organizations.' });
+		}
+
+		const formData = await request.formData();
+		const clientId = String(formData.get('client_id') || '').trim();
+
+		if (!clientId) {
+			return fail(400, { error: 'Client ID is required.' });
+		}
+
+		const { error: deleteError } = await supabase
+			.from('clients')
+			.delete()
+			.eq('id', clientId);
+
+		if (deleteError) {
+			return fail(500, { error: deleteError.message });
+		}
+
+		return { success: true, deletedClientId: clientId };
 	},
 
 	createProject: async ({ request, locals: { supabase, safeGetSession } }) => {
@@ -261,14 +252,15 @@ export const actions: Actions = {
 		const password = String(formData.get('password') || 'ChangeMe123!').trim();
 		const role = String(formData.get('role') || 'client_raiser');
 		const clientIdRaw = String(formData.get('client_id') || '').trim();
-		const clientId = clientIdRaw && role.startsWith('client_') ? clientIdRaw : null;
+		const isClientScopedRole = role.startsWith('client_') || role === 'project_admin';
+		const clientId = clientIdRaw && isClientScopedRole ? clientIdRaw : null;
 		const projectIds = formData.getAll('project_ids').map(String).filter(Boolean);
 
 		if (!fullName || !email) {
 			return fail(400, { error: 'Full name and email address are required.', fullName, email });
 		}
 
-		if (role.startsWith('client_') && !clientId) {
+		if (isClientScopedRole && !clientId) {
 			return fail(400, { error: 'Client organization is required for client roles.', fullName, email });
 		}
 

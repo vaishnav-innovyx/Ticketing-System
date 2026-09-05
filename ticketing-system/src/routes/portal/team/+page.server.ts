@@ -261,8 +261,20 @@ export const actions: Actions = {
 			return fail(403, { error: 'You can only delete teammates within your own organization.' });
 		}
 
-		await supabaseAdmin.from('project_members').delete().eq('user_id', targetUserId);
-		await supabaseAdmin.from('profiles').delete().eq('id', targetUserId);
+		// Disassociate/nullify foreign key references in dependent tables before deleting profile
+		await Promise.all([
+			supabaseAdmin.from('ticket_events').update({ actor_id: null }).eq('actor_id', targetUserId),
+			supabaseAdmin.from('tickets').update({ raised_by: null }).eq('raised_by', targetUserId),
+			supabaseAdmin.from('tickets').update({ poc_id: null }).eq('poc_id', targetUserId),
+			supabaseAdmin.from('ticket_dependencies').update({ created_by: null }).eq('created_by', targetUserId),
+			supabaseAdmin.from('project_members').delete().eq('user_id', targetUserId)
+		]);
+
+		const { error: profileDeleteError } = await supabaseAdmin.from('profiles').delete().eq('id', targetUserId);
+		if (profileDeleteError) {
+			console.error('Error deleting profile:', profileDeleteError);
+			return fail(500, { error: profileDeleteError.message || 'Failed to delete user profile.' });
+		}
 
 		const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
 		if (authDeleteError) {

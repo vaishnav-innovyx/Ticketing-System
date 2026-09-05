@@ -13,6 +13,17 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		}
 		throw redirect(303, '/portal');
 	}
+
+	const { count } = await supabase
+		.from('profiles')
+		.select('*', { count: 'exact', head: true })
+		.eq('role', 'super_admin');
+
+	const hasSuperAdmin = (count ?? 0) > 0;
+
+	return {
+		hasSuperAdmin
+	};
 };
 
 export const actions: Actions = {

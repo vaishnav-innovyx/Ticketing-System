@@ -23,9 +23,10 @@ export const load: LayoutServerLoad = async ({ locals: { supabase, safeGetSessio
 		throw redirect(303, '/login');
 	}
 
-	const [{ data: messages }, { data: reads }] = await Promise.all([
+	const [{ data: messages }, { data: reads }, { count: openTicketCount }] = await Promise.all([
 		supabase.from('ticket_messages').select('ticket_id, author_id, created_at').neq('author_id', user.id),
-		supabase.from('ticket_message_reads').select('ticket_id, last_read_at').eq('user_id', user.id)
+		supabase.from('ticket_message_reads').select('ticket_id, last_read_at').eq('user_id', user.id),
+		supabase.from('tickets').select('*', { count: 'exact', head: true }).neq('status', 'closed')
 	]);
 
 	const readMap = new Map((reads ?? []).map((r) => [r.ticket_id, r.last_read_at]));
@@ -34,5 +35,5 @@ export const load: LayoutServerLoad = async ({ locals: { supabase, safeGetSessio
 		return !lastRead || m.created_at > lastRead;
 	}).length;
 
-	return { profile, unreadMessageCount };
+	return { profile, unreadMessageCount, openTicketCount: openTicketCount ?? 0 };
 };

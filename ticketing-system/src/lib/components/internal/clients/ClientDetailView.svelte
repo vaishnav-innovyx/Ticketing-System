@@ -48,6 +48,7 @@
 		onClose?: () => void;
 	}
 
+	import { enhance } from '$app/forms';
 	import CreateProjectModal from '$lib/components/internal/projects/CreateProjectModal.svelte';
 	import CreateUserModal from '$lib/components/internal/users/CreateUserModal.svelte';
 	import EditUserModal from '$lib/components/internal/users/EditUserModal.svelte';
@@ -63,6 +64,9 @@
 	let isEditUserModalOpen = $state(false);
 	let selectedUser = $state<any>(null);
 	let isUserDetailModalOpen = $state(false);
+	let isDeleteModalOpen = $state(false);
+	let isDeleting = $state(false);
+	let deleteErrorMessage = $state<string | null>(null);
 
 	const isUnlimited = $derived(client.seat_quota === null || client.seat_quota === undefined || client.seat_quota <= 0);
 	const usedSeats = $derived(client.members.length);
@@ -203,6 +207,14 @@
 				>
 					<span class="material-symbols-outlined text-[18px]">edit</span>
 					<span>Edit Client</span>
+				</button>
+				<button
+					type="button"
+					class="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50/70 px-3.5 py-1.5 text-label-md font-semibold text-red-700 hover:bg-red-100 hover:text-red-800 transition-colors cursor-pointer"
+					onclick={() => (isDeleteModalOpen = true)}
+				>
+					<span class="material-symbols-outlined text-[18px]">delete</span>
+					<span>Delete</span>
 				</button>
 			</div>
 		</div>
@@ -834,4 +846,99 @@
 		projects={client.projects}
 		allowedRoleScope="client_only"
 	/>
+
+	<!-- Delete Client Confirmation Modal -->
+	{#if isDeleteModalOpen}
+		<div class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+			<button
+				type="button"
+				class="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+				onclick={() => (isDeleteModalOpen = false)}
+				aria-label="Close delete modal"
+			></button>
+
+			<div class="relative w-full max-w-md rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] p-6 shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200 space-y-4">
+				<div class="flex items-center gap-3 border-b border-[var(--color-outline-variant)]/40 pb-4">
+					<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+						<span class="material-symbols-outlined text-[24px]">warning</span>
+					</div>
+					<div>
+						<h3 class="text-title-lg font-bold text-[var(--color-on-surface)]">
+							Delete {client.name}?
+						</h3>
+						<p class="text-body-xs text-[var(--color-on-surface-variant)]">
+							This action cannot be undone.
+						</p>
+					</div>
+				</div>
+
+				{#if deleteErrorMessage}
+					<div class="flex items-center gap-2 rounded-lg border border-[var(--color-error)]/40 bg-[var(--color-error)]/10 px-4 py-3 text-body-sm text-[var(--color-error)]">
+						<span class="material-symbols-outlined shrink-0 text-[18px]">error</span>
+						<span>{deleteErrorMessage}</span>
+					</div>
+				{/if}
+
+				<p class="text-body-sm text-[var(--color-on-surface-variant)] leading-relaxed">
+					Are you sure you want to delete organization <strong class="text-[var(--color-on-surface)]">{client.name}</strong> (<code class="font-mono font-bold">{client.code}</code>)?
+				</p>
+
+				<div class="rounded-lg bg-amber-50/80 border border-amber-200 p-3 text-[12px] text-amber-900 space-y-1">
+					<p class="font-bold flex items-center gap-1">
+						<span class="material-symbols-outlined text-[16px] text-amber-700">info</span>
+						Associated Data To Be Removed:
+					</p>
+					<ul class="list-disc list-inside space-y-0.5 text-amber-800">
+						<li><strong>{client.projects.length}</strong> linked project{client.projects.length !== 1 ? 's' : ''}</li>
+						<li><strong>{client.tickets.length}</strong> ticket{client.tickets.length !== 1 ? 's' : ''}</li>
+						<li><strong>{client.members.length}</strong> client user link{client.members.length !== 1 ? 's' : ''}</li>
+					</ul>
+				</div>
+
+				<form
+					method="POST"
+					action="?/deleteClient"
+					use:enhance={() => {
+						isDeleting = true;
+						deleteErrorMessage = null;
+						return async ({ result, update }) => {
+							isDeleting = false;
+							if (result.type === 'failure') {
+								deleteErrorMessage = (result.data as { error?: string })?.error ?? 'Failed to delete client.';
+							} else if (result.type === 'success') {
+								isDeleteModalOpen = false;
+								if (onClose) onClose();
+								await update();
+							}
+						};
+					}}
+					class="flex items-center justify-end gap-3 pt-3 border-t border-[var(--color-outline-variant)]/40"
+				>
+					<input type="hidden" name="client_id" value={client.id} />
+					<button
+						type="button"
+						class="nexus-secondary-button h-10 px-4 text-label-md"
+						onclick={() => (isDeleteModalOpen = false)}
+						disabled={isDeleting}
+					>
+						Cancel
+					</button>
+
+					<button
+						type="submit"
+						disabled={isDeleting}
+						class="flex h-10 items-center gap-1.5 rounded-lg bg-red-600 px-5 text-label-md font-bold text-white shadow-sm hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
+					>
+						{#if isDeleting}
+							<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+							<span>Deleting...</span>
+						{:else}
+							<span class="material-symbols-outlined text-[18px]">delete</span>
+							<span>Delete Organization</span>
+						{/if}
+					</button>
+				</form>
+			</div>
+		</div>
+	{/if}
 </div>

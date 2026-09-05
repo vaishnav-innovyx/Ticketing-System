@@ -10,44 +10,44 @@
 	let { data }: { data: PageData } = $props();
 	const firstName = $derived(data?.profile?.full_name?.split(' ')[0] || data?.profile?.email?.split('@')[0] || 'Admin');
 
-	const kpiMetrics = [
+	const kpiMetrics = $derived([
 		{
 			title: 'Open Tickets',
-			value: 24,
+			value: data?.stats?.openTicketsCount ?? 0,
 			icon: 'receipt_long',
 			iconBgClass: 'bg-[var(--color-surface-container)]',
 			iconColorClass: 'text-[var(--color-primary-container)]',
-			trendText: '+3 today',
-			trendPositive: false
+			trendText: `${data?.stats?.openTicketsCount ?? 0} active`,
+			trendPositive: true
 		},
 		{
 			title: 'Awaiting Client',
-			value: 8,
+			value: data?.stats?.awaitingClientCount ?? 0,
 			icon: 'pending_actions',
 			iconBgClass: 'bg-[var(--color-tertiary-fixed)]/30',
 			iconColorClass: 'text-[var(--color-tertiary)]',
-			trendText: '-2 from yesterday',
+			trendText: `${data?.stats?.awaitingClientCount ?? 0} pending`,
 			trendPositive: true
 		},
 		{
 			title: 'In Development',
-			value: 12,
+			value: data?.stats?.inDevelopmentCount ?? 0,
 			icon: 'code',
 			iconBgClass: 'bg-[var(--color-secondary-fixed)]/30',
 			iconColorClass: 'text-[var(--color-secondary)]',
-			trendText: '4 in QA review',
+			trendText: `${data?.stats?.inDevelopmentCount ?? 0} active eng`,
 			trendPositive: true
 		},
 		{
 			title: 'Resolved This Month',
-			value: 46,
+			value: data?.stats?.resolvedThisMonthCount ?? 0,
 			icon: 'check_circle',
 			iconBgClass: 'bg-[var(--color-secondary-container)]',
 			iconColorClass: 'text-[var(--color-on-secondary-container)]',
-			trendText: '+18% vs last month',
+			trendText: `${data?.stats?.resolvedThisMonthCount ?? 0} closed`,
 			trendPositive: true
 		}
-	];
+	]);
 </script>
 
 <svelte:head>

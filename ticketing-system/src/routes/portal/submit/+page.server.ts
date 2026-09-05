@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
-import { dispatchStageEmailNotification } from '$lib/server/email';
+import { createTicket } from '$lib/server/tickets';
 import { PRIORITY_LABEL, type TicketDbPriority } from '$lib/portal/ticketDisplay';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -84,27 +84,23 @@ export const actions: Actions = {
 			return fail(400, { error: 'No client associated with this project or account.' });
 		}
 
-		const { data: projectRow } = await supabaseAdmin.from('projects').select('default_poc_id').eq('id', projectId).single();
 		const requiresApproval = profile.role === 'client_raiser';
 
-		const { data: ticket, error: insertError } = await supabaseAdmin
-			.from('tickets')
-			.insert({
-				client_id: clientId,
-				project_id: projectId,
-				category: category as never,
-				priority: priority as never,
+		let ticket;
+		try {
+			ticket = await createTicket({
+				clientId,
+				projectId,
 				title,
 				description,
-				raised_by: user.id,
-				poc_id: projectRow?.default_poc_id ?? undefined,
-				requires_admin_approval: requiresApproval
-			})
-			.select('id, token, title, priority, projects(name)')
-			.single();
-
-		if (insertError || !ticket) {
-			return fail(500, { error: insertError?.message ?? 'Failed to create ticket.' });
+				category,
+				priority,
+				raisedBy: user.id,
+				requiresAdminApproval: requiresApproval,
+				source: 'portal'
+			});
+		} catch (err) {
+			return fail(500, { error: err instanceof Error ? err.message : 'Failed to create ticket.' });
 		}
 
 		if (ccEmails.length > 0) {
@@ -142,20 +138,13 @@ export const actions: Actions = {
 			}
 		}
 
-		// Dispatch stage notification email
-		dispatchStageEmailNotification({
-			ticketId: ticket.id,
-			event: requiresApproval ? 'pending_admin_approval' : 'ticket_raised',
-			actorId: user.id
-		}).catch((err) => console.error('Failed to dispatch portal ticket creation email:', err));
-
 		return {
 			success: true,
 			ticket: {
 				id: ticket.token ?? ticket.id,
 				title: ticket.title,
 				priority: (ticket.priority ? PRIORITY_LABEL[ticket.priority as TicketDbPriority] : null) ?? ticket.priority,
-				application: (ticket.projects as { name?: string } | null)?.name ?? '',
+				application: ticket.applicationName,
 				ccRecipients: ccEmails,
 				requiresApproval
 			}

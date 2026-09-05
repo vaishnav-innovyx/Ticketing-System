@@ -4,10 +4,12 @@
 	let {
 		profile,
 		unreadMessageCount = 0,
+		openTicketCount = 0,
 		onClose
 	}: {
 		profile?: { id: string; full_name: string | null; email: string; role: string } | null;
 		unreadMessageCount?: number;
+		openTicketCount?: number;
 		onClose?: () => void;
 	} = $props();
 
@@ -21,7 +23,7 @@
 			label: 'Tickets',
 			href: '/tickets',
 			icon: 'confirmation_number',
-			badge: 24
+			badge: openTicketCount > 0 ? openTicketCount : undefined
 		},
 		{
 			label: 'Communication',
@@ -58,6 +60,11 @@
 			label: 'Reports',
 			href: '/reports',
 			icon: 'bar_chart'
+		},
+		{
+			label: 'API Tokens',
+			href: '/api-tokens',
+			icon: 'vpn_key'
 		}
 	]);
 </script>

@@ -1,31 +1,34 @@
 <script lang="ts">
 	type TimeRange = 'Last 6 Months' | 'Last 30 Days' | 'This Year';
 
+	let { chartData }: { chartData?: Record<TimeRange, { labels: string[]; newTickets: number[]; resolvedTickets: number[] }> } = $props();
+
 	let selectedRange = $state<TimeRange>('Last 6 Months');
 	let hoveredIndex = $state<number | null>(null);
 
-	const dataByRange: Record<
+	const defaultDataByRange: Record<
 		TimeRange,
 		{ labels: string[]; newTickets: number[]; resolvedTickets: number[] }
 	> = {
 		'Last 6 Months': {
 			labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-			newTickets: [65, 59, 80, 81, 56, 55],
-			resolvedTickets: [45, 48, 60, 75, 62, 70]
+			newTickets: [0, 0, 0, 0, 0, 0],
+			resolvedTickets: [0, 0, 0, 0, 0, 0]
 		},
 		'Last 30 Days': {
 			labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-			newTickets: [18, 24, 15, 22],
-			resolvedTickets: [14, 20, 19, 25]
+			newTickets: [0, 0, 0, 0],
+			resolvedTickets: [0, 0, 0, 0]
 		},
 		'This Year': {
 			labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-			newTickets: [204, 192, 230, 210],
-			resolvedTickets: [180, 195, 220, 235]
+			newTickets: [0, 0, 0, 0],
+			resolvedTickets: [0, 0, 0, 0]
 		}
 	};
 
-	let currentData = $derived(dataByRange[selectedRange]);
+	let activeDataMap = $derived(chartData || defaultDataByRange);
+	let currentData = $derived(activeDataMap[selectedRange]);
 
 	// SVG Dimensions & Margins
 	const width = 800;

@@ -39,6 +39,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_tokens: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          name: string
+          project_id: string
+          revoked_at: string | null
+          scopes: string[]
+          token_hash: string
+          token_prefix: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name: string
+          project_id: string
+          revoked_at?: string | null
+          scopes?: string[]
+          token_hash: string
+          token_prefix: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          name?: string
+          project_id?: string
+          revoked_at?: string | null
+          scopes?: string[]
+          token_hash?: string
+          token_prefix?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_tokens_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           code: string
@@ -580,8 +647,10 @@ export type Database = {
           delivery_lead_id: string | null
           description: string | null
           development_completed_at: string | null
+          diagnostics: Json | null
           environment: string
           estimated_hours: number | null
+          external_ref: string | null
           id: string
           poc_id: string | null
           poc_responded_at: string | null
@@ -591,6 +660,7 @@ export type Database = {
           raised_by: string | null
           requirement_completed_at: string | null
           requires_admin_approval: boolean
+          source: string
           specialist_id: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           target_date: string | null
@@ -615,8 +685,10 @@ export type Database = {
           delivery_lead_id?: string | null
           description?: string | null
           development_completed_at?: string | null
+          diagnostics?: Json | null
           environment?: string
           estimated_hours?: number | null
+          external_ref?: string | null
           id?: string
           poc_id?: string | null
           poc_responded_at?: string | null
@@ -626,6 +698,7 @@ export type Database = {
           raised_by?: string | null
           requirement_completed_at?: string | null
           requires_admin_approval?: boolean
+          source?: string
           specialist_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           target_date?: string | null
@@ -650,8 +723,10 @@ export type Database = {
           delivery_lead_id?: string | null
           description?: string | null
           development_completed_at?: string | null
+          diagnostics?: Json | null
           environment?: string
           estimated_hours?: number | null
+          external_ref?: string | null
           id?: string
           poc_id?: string | null
           poc_responded_at?: string | null
@@ -661,6 +736,7 @@ export type Database = {
           raised_by?: string | null
           requirement_completed_at?: string | null
           requires_admin_approval?: boolean
+          source?: string
           specialist_id?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           target_date?: string | null

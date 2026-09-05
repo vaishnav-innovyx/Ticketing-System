@@ -6,12 +6,17 @@
 		percentage: number;
 	}
 
-	const priorities: PriorityItem[] = [
-		{ label: 'P0 – Critical', count: 15, colorVar: 'var(--color-error)', percentage: 33 },
-		{ label: 'P1 – High', count: 32, colorVar: 'var(--color-primary-container)', percentage: 71 },
-		{ label: 'P2 – Medium', count: 45, colorVar: 'var(--color-primary-fixed-dim)', percentage: 100 },
-		{ label: 'P3 – Low', count: 18, colorVar: 'var(--color-surface-container-highest)', percentage: 40 }
+	let { priorities: incomingPriorities = [] }: { priorities?: PriorityItem[] } = $props();
+
+	const fallbackPriorities: PriorityItem[] = [
+		{ label: 'P0 – Critical', count: 0, colorVar: 'var(--color-error)', percentage: 0 },
+		{ label: 'P1 – High', count: 0, colorVar: 'var(--color-primary-container)', percentage: 0 },
+		{ label: 'P2 – Medium', count: 0, colorVar: 'var(--color-primary-fixed-dim)', percentage: 0 },
+		{ label: 'P3 – Low', count: 0, colorVar: 'var(--color-surface-container-highest)', percentage: 0 }
 	];
+
+	const displayPriorities = $derived(incomingPriorities.length > 0 ? incomingPriorities : fallbackPriorities);
+	const totalEvaluated = $derived(displayPriorities.reduce((sum, p) => sum + p.count, 0));
 
 	let hoveredPriority = $state<string | null>(null);
 </script>
@@ -24,7 +29,7 @@
 
 	<!-- Bar Chart Area -->
 	<div class="flex min-h-[190px] flex-1 items-end gap-3 sm:gap-4 px-2 pt-4">
-		{#each priorities as p}
+		{#each displayPriorities as p}
 			{@const isHovered = hoveredPriority === p.label}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
@@ -64,6 +69,6 @@
 	<!-- Summary Footer -->
 	<div class="mt-4 flex items-center justify-between border-t border-[var(--color-outline-variant)]/20 pt-2.5 text-label-sm text-[var(--color-on-surface-variant)]">
 		<span>4 Priority Levels</span>
-		<span class="font-semibold text-[var(--color-on-surface)]">110 Total Evaluated</span>
+		<span class="font-semibold text-[var(--color-on-surface)]">{totalEvaluated} Total Evaluated</span>
 	</div>
 </div>

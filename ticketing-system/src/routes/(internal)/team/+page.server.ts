@@ -3,21 +3,9 @@ import { supabaseAdmin } from '$lib/server/supabase';
 import { ASSIGNABLE_ROLES, isClientRole, provisionUser } from '$lib/server/users';
 import type { Actions, PageServerLoad } from './$types';
 
-const SEED_FALLBACK_MEMBERS = [
-	{ id: 'u0', email: 'admin@companyx.com', full_name: 'Super Admin', role: 'super_admin', client_id: null, client: null, assigned_projects: [{ id: 'p1', code: 'MBANK', name: 'Acme Mobile Banking' }, { id: 'p5', code: 'ERP', name: 'Globex ERP' }, { id: 'p8', code: 'APP', name: 'TechCo Mobile App' }], created_at: new Date(Date.now() - 60 * 86400000).toISOString() },
-	{ id: 'u-poc', email: 'poc@companyx.com', full_name: 'PoC User', role: 'poc', client_id: null, client: null, assigned_projects: [{ id: 'p1', code: 'MBANK', name: 'Acme Mobile Banking' }, { id: 'p2', code: 'POS', name: 'Acme Point of Sale' }], created_at: new Date(Date.now() - 45 * 86400000).toISOString() },
-	{ id: 'u-spec', email: 'specialist@companyx.com', full_name: 'Tech Specialist', role: 'specialist', client_id: null, client: null, assigned_projects: [{ id: 'p1', code: 'MBANK', name: 'Acme Mobile Banking' }, { id: 'p3', code: 'CRM', name: 'Acme CRM' }], created_at: new Date(Date.now() - 45 * 86400000).toISOString() },
-	{ id: 'u-del', email: 'delivery@companyx.com', full_name: 'Delivery Lead', role: 'delivery_lead', client_id: null, client: null, assigned_projects: [{ id: 'p1', code: 'MBANK', name: 'Acme Mobile Banking' }, { id: 'p4', code: 'WEB', name: 'Acme Website' }], created_at: new Date(Date.now() - 45 * 86400000).toISOString() },
-	{ id: 'u1', email: 'admin@acme-client.com', full_name: 'Acme Admin', role: 'client_admin', client_id: '11111111-1111-1111-1111-111111111111', client: { id: '11111111-1111-1111-1111-111111111111', name: 'Acme Corp', code: 'ACME' }, assigned_projects: [{ id: 'p1', code: 'MBANK', name: 'Acme Mobile Banking' }, { id: 'p2', code: 'POS', name: 'Acme Point of Sale' }, { id: 'p3', code: 'CRM', name: 'Acme CRM' }, { id: 'p4', code: 'WEB', name: 'Acme Website' }], created_at: new Date(Date.now() - 28 * 86400000).toISOString() },
-	{ id: 'u2', email: 'raiser@acme-client.com', full_name: 'Acme Raiser', role: 'client_raiser', client_id: '11111111-1111-1111-1111-111111111111', client: { id: '11111111-1111-1111-1111-111111111111', name: 'Acme Corp', code: 'ACME' }, assigned_projects: [{ id: 'p1', code: 'MBANK', name: 'Acme Mobile Banking' }, { id: 'p2', code: 'POS', name: 'Acme Point of Sale' }], created_at: new Date(Date.now() - 27 * 86400000).toISOString() },
-	{ id: 'u3', email: 'viewer@acme-client.com', full_name: 'Acme Viewer', role: 'client_viewer', client_id: '11111111-1111-1111-1111-111111111111', client: { id: '11111111-1111-1111-1111-111111111111', name: 'Acme Corp', code: 'ACME' }, assigned_projects: [{ id: 'p1', code: 'MBANK', name: 'Acme Mobile Banking' }], created_at: new Date(Date.now() - 26 * 86400000).toISOString() },
-	{ id: 'u4', email: 'it-lead@globex.com', full_name: 'Marcus Vance', role: 'client_admin', client_id: '22222222-2222-2222-2222-222222222222', client: { id: '22222222-2222-2222-2222-222222222222', name: 'Globex Inc', code: 'GLOB' }, assigned_projects: [{ id: 'p5', code: 'ERP', name: 'Globex ERP' }, { id: 'p6', code: 'HR', name: 'Globex HR Portal' }, { id: 'p7', code: 'LOG', name: 'Globex Logistics' }], created_at: new Date(Date.now() - 40 * 86400000).toISOString() },
-	{ id: 'u5', email: 'operations@globex.com', full_name: 'Elena Rostova', role: 'client_raiser', client_id: '22222222-2222-2222-2222-222222222222', client: { id: '22222222-2222-2222-2222-222222222222', name: 'Globex Inc', code: 'GLOB' }, assigned_projects: [{ id: 'p5', code: 'ERP', name: 'Globex ERP' }, { id: 'p7', code: 'LOG', name: 'Globex Logistics' }], created_at: new Date(Date.now() - 35 * 86400000).toISOString() },
-	{ id: 'u6', email: 'devops@techco.io', full_name: 'David Chen', role: 'client_admin', client_id: '33333333-3333-3333-3333-333333333333', client: { id: '33333333-3333-3333-3333-333333333333', name: 'TechCo Ltd', code: 'TECHCO' }, assigned_projects: [{ id: 'p8', code: 'APP', name: 'TechCo Mobile App' }, { id: 'p9', code: 'API', name: 'TechCo Public API' }, { id: 'p10', code: 'INFRA', name: 'TechCo Infrastructure' }], created_at: new Date(Date.now() - 55 * 86400000).toISOString() }
-];
-
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	try {
+		const { user } = await safeGetSession();
 		const [{ data: dbProfiles }, { data: dbClients }, { data: dbProjects }, { data: dbMemberships }] = await Promise.all([
 			supabase.from('profiles').select('id, email, full_name, role, client_id, created_at, clients(id, name, code)').order('created_at', { ascending: false }),
 			supabase.from('clients').select('id, code, name').order('name'),
@@ -31,13 +19,10 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 
 		if (!dbProfiles || dbProfiles.length === 0) {
 			return {
-				members: SEED_FALLBACK_MEMBERS,
-				clients: clients.length > 0 ? clients : [
-					{ id: '11111111-1111-1111-1111-111111111111', code: 'ACME', name: 'Acme Corp' },
-					{ id: '22222222-2222-2222-2222-222222222222', code: 'GLOB', name: 'Globex Inc' },
-					{ id: '33333333-3333-3333-3333-333333333333', code: 'TECHCO', name: 'TechCo Ltd' }
-				],
-				projects
+				members: [],
+				clients,
+				projects,
+				currentUserId: user?.id ?? null
 			};
 		}
 
@@ -61,16 +46,13 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			};
 		});
 
-		return { members, clients, projects };
+		return { members, clients, projects, currentUserId: user?.id ?? null };
 	} catch {
 		return {
-			members: SEED_FALLBACK_MEMBERS,
-			clients: [
-				{ id: '11111111-1111-1111-1111-111111111111', code: 'ACME', name: 'Acme Corp' },
-				{ id: '22222222-2222-2222-2222-222222222222', code: 'GLOB', name: 'Globex Inc' },
-				{ id: '33333333-3333-3333-3333-333333333333', code: 'TECHCO', name: 'TechCo Ltd' }
-			],
-			projects: []
+			members: [],
+			clients: [],
+			projects: [],
+			currentUserId: null
 		};
 	}
 };
@@ -91,14 +73,15 @@ export const actions: Actions = {
 		const password = String(formData.get('password') || 'ChangeMe123!').trim();
 		const role = String(formData.get('role') || 'client_raiser');
 		const clientIdRaw = String(formData.get('client_id') || '').trim();
-		const clientId = clientIdRaw && role.startsWith('client_') ? clientIdRaw : null;
+		const isClientScopedRole = role.startsWith('client_') || role === 'project_admin';
+		const clientId = clientIdRaw && isClientScopedRole ? clientIdRaw : null;
 		const projectIds = formData.getAll('project_ids').map(String).filter(Boolean);
 
 		if (!fullName || !email) {
 			return fail(400, { error: 'Full name and email address are required.', fullName, email });
 		}
 
-		if (role.startsWith('client_') && !clientId) {
+		if (isClientScopedRole && !clientId) {
 			return fail(400, { error: 'Client organization is required for client roles.', fullName, email });
 		}
 
@@ -281,5 +264,57 @@ export const actions: Actions = {
 		}
 
 		return { success: true, updatedUserId: targetUserId };
+	},
+
+	deleteUser: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const { data: callerProfile } = await supabase.from('profiles').select('role, client_id').eq('id', user.id).single();
+		if (!callerProfile || (callerProfile.role !== 'super_admin' && callerProfile.role !== 'client_admin')) {
+			return fail(403, { error: 'You do not have permission to delete user accounts.' });
+		}
+
+		const formData = await request.formData();
+		const targetUserId = String(formData.get('user_id') || '').trim();
+
+		if (!targetUserId) {
+			return fail(400, { error: 'User ID is required.' });
+		}
+
+		if (targetUserId === user.id) {
+			return fail(400, { error: 'You cannot delete your own account.' });
+		}
+
+		const { data: targetProfile } = await supabaseAdmin.from('profiles').select('client_id').eq('id', targetUserId).single();
+		if (!targetProfile) {
+			return fail(404, { error: 'User profile not found.' });
+		}
+
+		if (callerProfile.role === 'client_admin' && targetProfile.client_id !== callerProfile.client_id) {
+			return fail(403, { error: 'Client Admins can only delete users within their own organization.' });
+		}
+
+		// Disassociate/nullify foreign key references in dependent tables before deleting profile
+		await Promise.all([
+			supabaseAdmin.from('ticket_events').update({ actor_id: null }).eq('actor_id', targetUserId),
+			supabaseAdmin.from('tickets').update({ raised_by: null }).eq('raised_by', targetUserId),
+			supabaseAdmin.from('tickets').update({ poc_id: null }).eq('poc_id', targetUserId),
+			supabaseAdmin.from('ticket_dependencies').update({ created_by: null }).eq('created_by', targetUserId),
+			supabaseAdmin.from('project_members').delete().eq('user_id', targetUserId)
+		]);
+
+		const { error: profileDeleteError } = await supabaseAdmin.from('profiles').delete().eq('id', targetUserId);
+		if (profileDeleteError) {
+			console.error('Error deleting profile:', profileDeleteError);
+			return fail(500, { error: profileDeleteError.message || 'Failed to delete user profile.' });
+		}
+
+		const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+		if (authDeleteError) {
+			console.error('Error deleting auth user:', authDeleteError);
+		}
+
+		return { success: true, deletedUserId: targetUserId };
 	}
 };
