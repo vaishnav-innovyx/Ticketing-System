@@ -23,6 +23,7 @@ export interface CreatedTicket {
 	title: string;
 	priority: string;
 	applicationName: string;
+	requiresAdminApproval: boolean;
 }
 
 /**
@@ -39,7 +40,24 @@ export async function createTicket(input: CreateTicketInput): Promise<CreatedTic
 		.eq('id', input.projectId)
 		.single();
 
-	const requiresApproval = input.requiresAdminApproval ?? false;
+	let requiresApproval = input.requiresAdminApproval ?? false;
+
+	// Auto-skip approval when no assigned project_admin exists for this project
+	if (requiresApproval) {
+		const { data: members } = await supabaseAdmin
+			.from('project_members')
+			.select('user_id, profiles!project_members_user_id_fkey(role)')
+			.eq('project_id', input.projectId);
+
+		const hasProjectAdmin = (members ?? []).some((m) => {
+			const role = Array.isArray(m.profiles) ? m.profiles[0]?.role : m.profiles?.role;
+			return role === 'project_admin';
+		});
+
+		if (!hasProjectAdmin) {
+			requiresApproval = false;
+		}
+	}
 
 	const { data: ticket, error: insertError } = await supabaseAdmin
 		.from('tickets')
@@ -58,7 +76,7 @@ export async function createTicket(input: CreateTicketInput): Promise<CreatedTic
 			external_ref: input.externalRef ?? null,
 			diagnostics: input.diagnostics ?? null
 		})
-		.select('id, token, title, priority, projects(name)')
+		.select('id, token, title, priority, requires_admin_approval, projects(name)')
 		.single();
 
 	if (insertError || !ticket) {
@@ -76,6 +94,7 @@ export async function createTicket(input: CreateTicketInput): Promise<CreatedTic
 		token: ticket.token,
 		title: ticket.title,
 		priority: ticket.priority,
-		applicationName: (ticket.projects as { name?: string } | null)?.name ?? ''
+		applicationName: (ticket.projects as { name?: string } | null)?.name ?? '',
+		requiresAdminApproval: ticket.requires_admin_approval
 	};
 }

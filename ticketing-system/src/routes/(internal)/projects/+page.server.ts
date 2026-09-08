@@ -4,13 +4,12 @@ import type { Actions, PageServerLoad } from './$types';
 
 const INTERNAL_TEAM_ROLES = ['poc', 'specialist', 'delivery_lead'] as const;
 
-// A default POC must be someone who can actually see the project's tickets:
-// a super_admin (unrestricted), or a POC included in the submitted team.
-async function validateDefaultPoc(defaultPocId: string | null, teamMemberIds: string[]): Promise<string | null> {
+// A default POC must be a valid internal staff member with role 'super_admin' or 'poc'.
+async function validateDefaultPoc(defaultPocId: string | null): Promise<string | null> {
 	if (!defaultPocId) return null;
-	if (teamMemberIds.includes(defaultPocId)) return defaultPocId;
 	const { data: pocProfile } = await supabaseAdmin.from('profiles').select('role').eq('id', defaultPocId).single();
-	return pocProfile?.role === 'super_admin' ? defaultPocId : null;
+	if (!pocProfile) return null;
+	return pocProfile.role === 'super_admin' || pocProfile.role === 'poc' ? defaultPocId : null;
 }
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
@@ -86,7 +85,16 @@ export const actions: Actions = {
 		const name = String(formData.get('name') || '').trim();
 		const code = String(formData.get('code') || '').trim().toUpperCase();
 		const teamMemberIds = formData.getAll('team_member_ids').map(String).filter(Boolean);
-		const defaultPocId = await validateDefaultPoc(String(formData.get('default_poc_id') || '').trim() || null, teamMemberIds);
+		const defaultPocId = await validateDefaultPoc(String(formData.get('default_poc_id') || '').trim() || null);
+
+		// If a default POC is specified and is internal staff (not super_admin), ensure they are in project_members
+		const finalTeamMemberIds = [...teamMemberIds];
+		if (defaultPocId && !finalTeamMemberIds.includes(defaultPocId)) {
+			const { data: pocProfile } = await supabaseAdmin.from('profiles').select('role').eq('id', defaultPocId).single();
+			if (pocProfile && pocProfile.role !== 'super_admin') {
+				finalTeamMemberIds.push(defaultPocId);
+			}
+		}
 
 		if (!clientId || !name || !code) {
 			return fail(400, { error: 'Client, project name, and project code are required.', clientId, name, code });
@@ -115,10 +123,10 @@ export const actions: Actions = {
 			return fail(500, { error: projectError.message, clientId, name, code });
 		}
 
-		if (teamMemberIds.length > 0) {
+		if (finalTeamMemberIds.length > 0) {
 			await supabaseAdmin
 				.from('project_members')
-				.insert(teamMemberIds.map((userId) => ({ project_id: newProject.id, user_id: userId })));
+				.insert(finalTeamMemberIds.map((userId) => ({ project_id: newProject.id, user_id: userId })));
 		}
 
 		return { success: true, createdProjectId: newProject.id };
@@ -137,7 +145,15 @@ export const actions: Actions = {
 		const projectId = String(formData.get('project_id') || '').trim();
 		const name = String(formData.get('name') || '').trim();
 		const teamMemberIds = formData.getAll('team_member_ids').map(String).filter(Boolean);
-		const defaultPocId = await validateDefaultPoc(String(formData.get('default_poc_id') || '').trim() || null, teamMemberIds);
+		const defaultPocId = await validateDefaultPoc(String(formData.get('default_poc_id') || '').trim() || null);
+
+		const finalTeamMemberIds = [...teamMemberIds];
+		if (defaultPocId && !finalTeamMemberIds.includes(defaultPocId)) {
+			const { data: pocProfile } = await supabaseAdmin.from('profiles').select('role').eq('id', defaultPocId).single();
+			if (pocProfile && pocProfile.role !== 'super_admin') {
+				finalTeamMemberIds.push(defaultPocId);
+			}
+		}
 
 		if (!projectId || !name) {
 			return fail(400, { error: 'Project and project name are required.' });
@@ -173,10 +189,10 @@ export const actions: Actions = {
 		if (existingInternalMemberIds.length > 0) {
 			await supabaseAdmin.from('project_members').delete().in('id', existingInternalMemberIds);
 		}
-		if (teamMemberIds.length > 0) {
+		if (finalTeamMemberIds.length > 0) {
 			await supabaseAdmin
 				.from('project_members')
-				.insert(teamMemberIds.map((userId) => ({ project_id: projectId, user_id: userId })));
+				.insert(finalTeamMemberIds.map((userId) => ({ project_id: projectId, user_id: userId })));
 		}
 
 		return { success: true, updatedProjectId: projectId };

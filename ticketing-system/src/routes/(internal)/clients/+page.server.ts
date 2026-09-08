@@ -191,11 +191,12 @@ export const actions: Actions = {
 		const defaultPocIdRaw = String(formData.get('default_poc_id') || '').trim() || null;
 		let defaultPocId: string | null = null;
 		if (defaultPocIdRaw) {
-			if (teamMemberIds.includes(defaultPocIdRaw)) {
+			const { data: pocProfile } = await supabaseAdmin.from('profiles').select('role').eq('id', defaultPocIdRaw).single();
+			if (pocProfile && (pocProfile.role === 'super_admin' || pocProfile.role === 'poc')) {
 				defaultPocId = defaultPocIdRaw;
-			} else {
-				const { data: pocProfile } = await supabaseAdmin.from('profiles').select('role').eq('id', defaultPocIdRaw).single();
-				defaultPocId = pocProfile?.role === 'super_admin' ? defaultPocIdRaw : null;
+				if (pocProfile.role !== 'super_admin' && !teamMemberIds.includes(defaultPocId)) {
+					teamMemberIds.push(defaultPocId);
+				}
 			}
 		}
 

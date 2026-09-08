@@ -63,12 +63,11 @@ export async function resolveTicketEmailRouting(
 	const raiserEmail = (ticket.raised_by_profile as any)?.email?.toLowerCase() || '';
 	const ccSet = new Set<string>();
 
-	// 1. Assigned Project Admins (project_members with role 'project_admin').
-	// On estimate_approved - the client's green light for development to start - also CC
-	// every internal project team member (specialist/POC/delivery lead), not just whoever
-	// happens to already be set on this specific ticket, since the client's approval means
-	// whoever's on the project needs to see it and pick the ticket up.
-	const notifyAllProjectRoles = event === 'estimate_approved';
+	// 1. Assigned Project Admins and team members.
+	// On ticket_raised: all internal project team members (specialist/POC/delivery lead)
+	// receive notification so they can triage the ticket if unassigned or coordinate with POC.
+	// On estimate_approved: green light for development to start - also CC every internal team member.
+	const notifyAllProjectRoles = event === 'estimate_approved' || event === 'ticket_raised';
 	const { data: projectMembers } = await supabaseAdmin
 		.from('project_members')
 		.select('user_id, profiles!project_members_user_id_fkey(email, role)')
@@ -87,15 +86,18 @@ export async function resolveTicketEmailRouting(
 	}
 
 	// 2. Client Admins for ticket.client_id
-	const { data: clientAdmins } = await supabaseAdmin
-		.from('profiles')
-		.select('email')
-		.eq('client_id', ticket.client_id)
-		.eq('role', 'client_admin');
+	// Excluded on 'ticket_raised' per notification requirements
+	if (event !== 'ticket_raised') {
+		const { data: clientAdmins } = await supabaseAdmin
+			.from('profiles')
+			.select('email')
+			.eq('client_id', ticket.client_id)
+			.eq('role', 'client_admin');
 
-	if (clientAdmins) {
-		for (const ca of clientAdmins) {
-			if (ca.email) ccSet.add(ca.email.toLowerCase());
+		if (clientAdmins) {
+			for (const ca of clientAdmins) {
+				if (ca.email) ccSet.add(ca.email.toLowerCase());
+			}
 		}
 	}
 

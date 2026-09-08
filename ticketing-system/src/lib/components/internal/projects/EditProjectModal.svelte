@@ -37,11 +37,9 @@
 		}
 	});
 
-	// Default POC must be someone who can actually see this project's tickets:
-	// either a super_admin (sees everything regardless of membership), or a
-	// POC-role person currently checked into the Project Team below.
+	// All super admins and POC-role staff are eligible as Default POC
 	const pocCandidates = $derived(
-		internalStaff.filter((s) => s.role === 'super_admin' || (s.role === 'poc' && selectedTeamMemberIds.includes(s.id)))
+		internalStaff.filter((s) => s.role === 'super_admin' || s.role === 'poc')
 	);
 	const teamCandidates = $derived(internalStaff.filter((s) => s.role !== 'super_admin'));
 
@@ -51,7 +49,20 @@
 		}
 	});
 
+	// When Default POC is selected, automatically include them in the Project Team if applicable
+	$effect(() => {
+		if (defaultPocId) {
+			const isTeamCandidate = teamCandidates.some((t) => t.id === defaultPocId);
+			if (isTeamCandidate && !selectedTeamMemberIds.includes(defaultPocId)) {
+				selectedTeamMemberIds = [...selectedTeamMemberIds, defaultPocId];
+			}
+		}
+	});
+
 	function toggleTeamMember(id: string) {
+		if (id === defaultPocId) {
+			defaultPocId = '';
+		}
 		selectedTeamMemberIds = selectedTeamMemberIds.includes(id)
 			? selectedTeamMemberIds.filter((x) => x !== id)
 			: [...selectedTeamMemberIds, id];
@@ -81,10 +92,10 @@
 
 		<!-- Modal Dialog -->
 		<div
-			class="relative w-full max-w-lg rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] p-6 shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+			class="relative w-full max-w-lg rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] shadow-2xl z-10 animate-in fade-in zoom-in-95 duration-200 max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)] flex flex-col my-auto overflow-hidden"
 		>
 			<!-- Modal Header -->
-			<div class="flex items-center justify-between border-b border-[var(--color-outline-variant)]/40 pb-4">
+			<div class="flex items-center justify-between border-b border-[var(--color-outline-variant)]/40 px-6 py-4.5 shrink-0">
 				<div class="flex items-center gap-3">
 					<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
 						<span class="material-symbols-outlined text-[22px]">edit_note</span>
@@ -109,14 +120,6 @@
 				</button>
 			</div>
 
-			<!-- Error Alert -->
-			{#if errorMessage}
-				<div class="mt-4 flex items-center gap-2 rounded-lg border border-[var(--color-error)]/40 bg-[var(--color-error)]/10 px-4 py-3 text-body-sm text-[var(--color-error)]">
-					<span class="material-symbols-outlined shrink-0 text-[18px]">error</span>
-					<span>{errorMessage}</span>
-				</div>
-			{/if}
-
 			<!-- Form -->
 			<form
 				method="POST"
@@ -136,8 +139,17 @@
 						}
 					};
 				}}
-				class="mt-5 space-y-4"
+				class="flex flex-col flex-1 min-h-0"
 			>
+				<!-- Scrollable Form Body -->
+				<div class="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+					<!-- Error Alert -->
+					{#if errorMessage}
+						<div class="flex items-center gap-2 rounded-lg border border-[var(--color-error)]/40 bg-[var(--color-error)]/10 px-4 py-3 text-body-sm text-[var(--color-error)]">
+							<span class="material-symbols-outlined shrink-0 text-[18px]">error</span>
+							<span>{errorMessage}</span>
+						</div>
+					{/if}
 				<input type="hidden" name="project_id" value={project.id} />
 
 				<!-- Project Code (read-only, baked into ticket tokens) -->
@@ -182,6 +194,9 @@
 								<option value={staff.id}>{staff.full_name || staff.email}</option>
 							{/each}
 						</select>
+						<p class="text-[11px] text-[var(--color-on-surface-variant)]">
+							Auto-assigned as PoC on new tickets and automatically included in the project team.
+						</p>
 					</div>
 				{/if}
 
@@ -194,6 +209,7 @@
 						<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-low)] p-3 max-h-40 overflow-y-auto space-y-1.5">
 							{#each teamCandidates as staff}
 								{@const isChecked = selectedTeamMemberIds.includes(staff.id)}
+								{@const isDefaultPoc = staff.id === defaultPocId}
 								<label
 									class="flex items-center gap-2.5 rounded-lg p-2 transition-colors cursor-pointer {isChecked ? 'bg-white border border-indigo-200 shadow-2xs' : 'hover:bg-white/60'}"
 								>
@@ -205,9 +221,16 @@
 										onchange={() => toggleTeamMember(staff.id)}
 										class="h-4 w-4 rounded text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
 									/>
-									<div>
-										<span class="text-body-sm font-medium text-[var(--color-on-surface)]">{staff.full_name || staff.email}</span>
-										<span class="ml-1 text-[11px] uppercase tracking-wide text-[var(--color-on-surface-variant)]">{staff.role.replace('_', ' ')}</span>
+									<div class="flex items-center justify-between flex-1 min-w-0">
+										<div class="truncate">
+											<span class="text-body-sm font-medium text-[var(--color-on-surface)]">{staff.full_name || staff.email}</span>
+											<span class="ml-1 text-[11px] uppercase tracking-wide text-[var(--color-on-surface-variant)]">{staff.role.replace('_', ' ')}</span>
+										</div>
+										{#if isDefaultPoc}
+											<span class="ml-2 shrink-0 rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
+												Default POC
+											</span>
+										{/if}
 									</div>
 								</label>
 							{/each}
@@ -215,8 +238,10 @@
 					</div>
 				{/if}
 
+				</div>
+
 				<!-- Actions -->
-				<div class="flex items-center justify-end gap-3 pt-4 border-t border-[var(--color-outline-variant)]/40">
+				<div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--color-outline-variant)]/40 shrink-0 bg-[var(--color-surface-container-lowest)]">
 					<button
 						type="button"
 						class="nexus-secondary-button h-10 px-4 text-label-md cursor-pointer"

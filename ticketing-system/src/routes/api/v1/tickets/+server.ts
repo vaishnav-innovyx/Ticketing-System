@@ -188,7 +188,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			token: ticket.token,
 			title: ticket.title,
 			priority: ticket.priority,
-			requires_admin_approval: requiresAdminApproval
+			requires_admin_approval: ticket.requiresAdminApproval
 		},
 		{ status: 201 }
 	);
