@@ -177,9 +177,9 @@ export const actions: Actions = {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Not authenticated.' });
 
-		// Verify super_admin or client_admin role
+		// Verify super_admin, client_admin, or specialist role
 		const { data: profile } = await supabase.from('profiles').select('role, client_id').eq('id', user.id).single();
-		if (!profile || (profile.role !== 'super_admin' && profile.role !== 'client_admin')) {
+		if (!profile || (profile.role !== 'super_admin' && profile.role !== 'client_admin' && profile.role !== 'specialist')) {
 			return fail(403, { error: 'You do not have permission to create projects.' });
 		}
 
@@ -200,12 +200,17 @@ export const actions: Actions = {
 			}
 		}
 
+		// If creator is a specialist, ensure they are in project team members
+		if (profile.role === 'specialist' && !teamMemberIds.includes(user.id)) {
+			teamMemberIds.push(user.id);
+		}
+
 		if (!clientId || !name || !code) {
 			return fail(400, { error: 'Client, project name, and project code are required.', clientId, name, code });
 		}
 
 		// Insert project
-		const { data: newProject, error: projectError } = await supabase
+		const { data: newProject, error: projectError } = await supabaseAdmin
 			.from('projects')
 			.insert({
 				client_id: clientId,

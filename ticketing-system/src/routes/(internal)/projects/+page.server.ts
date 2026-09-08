@@ -15,11 +15,11 @@ async function validateDefaultPoc(defaultPocId: string | null): Promise<string |
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	try {
 		const [{ data: dbClients }, { data: dbProjects }, { data: dbTickets }, { data: dbMembers }, { data: dbProfiles }] = await Promise.all([
-			supabase.from('clients').select('id, code, name').order('name'),
-			supabase.from('projects').select('id, client_id, code, name, default_poc_id, created_at, clients(id, code, name)').order('created_at', { ascending: false }),
-			supabase.from('tickets').select('id, project_id, status'),
-			supabase.from('project_members').select('id, project_id, user_id'),
-			supabase.from('profiles').select('id, full_name, email, role').in('role', [...INTERNAL_TEAM_ROLES, 'super_admin'])
+			supabaseAdmin.from('clients').select('id, code, name').order('name'),
+			supabaseAdmin.from('projects').select('id, client_id, code, name, default_poc_id, created_at, clients(id, code, name)').order('created_at', { ascending: false }),
+			supabaseAdmin.from('tickets').select('id, project_id, status'),
+			supabaseAdmin.from('project_members').select('id, project_id, user_id'),
+			supabaseAdmin.from('profiles').select('id, full_name, email, role').in('role', [...INTERNAL_TEAM_ROLES, 'super_admin'])
 		]);
 
 		const clients = dbClients || [];
@@ -76,7 +76,7 @@ export const actions: Actions = {
 		if (!user) return fail(401, { error: 'Not authenticated.' });
 
 		const { data: profile } = await supabase.from('profiles').select('role, client_id').eq('id', user.id).single();
-		if (!profile || (profile.role !== 'super_admin' && profile.role !== 'client_admin')) {
+		if (!profile || (profile.role !== 'super_admin' && profile.role !== 'client_admin' && profile.role !== 'specialist')) {
 			return fail(403, { error: 'You do not have permission to create projects.' });
 		}
 
@@ -96,11 +96,16 @@ export const actions: Actions = {
 			}
 		}
 
+		// If creator is a specialist, ensure they are also part of the project team
+		if (profile.role === 'specialist' && !finalTeamMemberIds.includes(user.id)) {
+			finalTeamMemberIds.push(user.id);
+		}
+
 		if (!clientId || !name || !code) {
 			return fail(400, { error: 'Client, project name, and project code are required.', clientId, name, code });
 		}
 
-		const { data: newProject, error: projectError } = await supabase
+		const { data: newProject, error: projectError } = await supabaseAdmin
 			.from('projects')
 			.insert({
 				client_id: clientId,
@@ -137,7 +142,7 @@ export const actions: Actions = {
 		if (!user) return fail(401, { error: 'Not authenticated.' });
 
 		const { data: profile } = await supabase.from('profiles').select('role, client_id').eq('id', user.id).single();
-		if (!profile || (profile.role !== 'super_admin' && profile.role !== 'client_admin')) {
+		if (!profile || (profile.role !== 'super_admin' && profile.role !== 'client_admin' && profile.role !== 'specialist')) {
 			return fail(403, { error: 'You do not have permission to edit projects.' });
 		}
 
@@ -166,7 +171,7 @@ export const actions: Actions = {
 			}
 		}
 
-		const { error: updateError } = await supabase
+		const { error: updateError } = await supabaseAdmin
 			.from('projects')
 			.update({ name, default_poc_id: defaultPocId })
 			.eq('id', projectId);

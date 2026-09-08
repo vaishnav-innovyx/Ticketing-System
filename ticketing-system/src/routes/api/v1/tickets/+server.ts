@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+﻿import { createHmac, timingSafeEqual } from 'node:crypto';
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { authenticateApiToken } from '$lib/server/apiAuth';
@@ -32,6 +32,7 @@ interface CreateTicketBody {
 	external_ref?: string;
 	diagnostics?: unknown;
 	depends_on_tokens?: string[];
+	dependency_notes?: Array<{ kind: 'person' | 'module'; label: string; detail?: string }>;
 }
 
 function verifyUserSignature(identity: UserIdentityPayload, signature: string, secret: string): boolean {
@@ -179,6 +180,22 @@ export const POST: RequestHandler = async ({ request }) => {
 			if (dependencyInserts.length > 0) {
 				await supabaseAdmin.from('ticket_dependencies').insert(dependencyInserts as never);
 			}
+		}
+	}
+
+	// Link dependency notes if provided (people/modules involved)
+	if (body.dependency_notes && Array.isArray(body.dependency_notes) && body.dependency_notes.length > 0) {
+		const validNotes = body.dependency_notes
+			.filter((n) => n && (n.kind === 'person' || n.kind === 'module') && typeof n.label === 'string' && n.label.trim())
+			.map((n) => ({
+				ticket_id: ticket.id,
+				kind: n.kind,
+				label: n.label.trim(),
+				detail: n.detail?.trim() || null,
+				created_by: raisedByUserId
+			}));
+		if (validNotes.length > 0) {
+			await supabaseAdmin.from('ticket_dependency_notes').insert(validNotes as never);
 		}
 	}
 
