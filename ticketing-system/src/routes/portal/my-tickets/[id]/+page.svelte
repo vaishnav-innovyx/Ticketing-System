@@ -251,6 +251,115 @@
 					<TicketProgressStepper currentStepIndex={ticket.progressStep} />
 				</div>
 			{/if}
+
+			<!-- Estimate Approval Hero Card (High Visibility Placement) -->
+			{#if data.ticket.status === 'client_approval' && !data.ticket.client_approved_at}
+				<div class="rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50/40 to-amber-50/20 p-6 shadow-sm space-y-4 animate-in fade-in duration-200">
+					<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-amber-200/80">
+						<div class="flex items-start gap-3.5">
+							<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
+								<span class="material-symbols-outlined text-[26px]">pending_actions</span>
+							</div>
+							<div>
+								<div class="flex items-center gap-2">
+									<span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-label-xs font-bold uppercase tracking-wider text-amber-900 border border-amber-300">
+										Action Required
+									</span>
+									<span class="text-label-xs font-semibold text-amber-800">Stage 4: Client Approval</span>
+								</div>
+								<h2 class="text-xl font-bold text-[var(--color-on-surface)] mt-1">
+									Technical Estimate Ready for Your Approval
+								</h2>
+								<p class="text-body-sm text-[var(--color-on-surface-variant)] mt-0.5">
+									Our engineering team has scoped the requirements. Please review and approve the estimate to begin development.
+								</p>
+							</div>
+						</div>
+
+						<div class="flex items-center gap-3 shrink-0 self-start md:self-center bg-white/90 border border-amber-300 rounded-xl px-4 py-3 shadow-2xs">
+							<span class="material-symbols-outlined text-[24px] text-amber-600">timer</span>
+							<div>
+								<span class="text-[11px] font-semibold text-[var(--color-outline)] uppercase tracking-wider block">Estimated Effort</span>
+								<span class="text-title-lg font-bold text-[var(--color-on-surface)]">
+									{data.ticket.estimated_hours !== null && data.ticket.estimated_hours !== undefined ? `${data.ticket.estimated_hours} hours` : 'Not scoped'}
+								</span>
+							</div>
+						</div>
+					</div>
+
+					{#if isViewer}
+						<div class="flex items-center gap-2 rounded-lg bg-white/80 p-3 text-body-sm text-[var(--color-on-surface-variant)] border border-amber-200">
+							<span class="material-symbols-outlined text-[18px] text-amber-600">info</span>
+							<span>Awaiting approval from a Project Admin, Client Admin, or Raiser on your team. Viewer accounts cannot approve estimates.</span>
+						</div>
+					{:else}
+						<form
+							method="POST"
+							action="?/approveEstimate"
+							use:enhance={() => {
+								isSubmittingApproval = true;
+								return async ({ update }) => {
+									isSubmittingApproval = false;
+									approvalNotes = '';
+									await update();
+								};
+							}}
+							class="space-y-3"
+						>
+							<textarea
+								name="notes"
+								rows="2"
+								bind:value={approvalNotes}
+								placeholder="Add optional approval comments or notes for the development team..."
+								class="w-full rounded-xl border border-amber-200 bg-white px-3.5 py-2.5 text-body-sm text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)] outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/10 transition-all shadow-2xs"
+							></textarea>
+							<div class="flex flex-wrap items-center gap-3">
+								<button
+									type="submit"
+									disabled={isSubmittingApproval}
+									class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-label-md font-bold text-white hover:bg-emerald-700 transition-colors shadow-sm hover:shadow disabled:opacity-50 cursor-pointer"
+								>
+									<span class="material-symbols-outlined text-[20px]">check_circle</span>
+									<span>Approve Estimate &amp; Start Development</span>
+								</button>
+								<button
+									type="submit"
+									formaction="?/requestEstimateChanges"
+									disabled={isSubmittingApproval}
+									class="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-300 bg-white px-5 py-2.5 text-label-md font-semibold text-[var(--color-on-surface-variant)] hover:bg-amber-50/60 hover:text-[var(--color-on-surface)] transition-colors disabled:opacity-50 cursor-pointer"
+								>
+									<span class="material-symbols-outlined text-[20px]">undo</span>
+									<span>Request Changes</span>
+								</button>
+								<span class="text-[11px] text-amber-800/80">
+									* Notes are required only if requesting changes.
+								</span>
+							</div>
+						</form>
+					{/if}
+				</div>
+			{:else if data.ticket.status === 'client_approval' && data.ticket.client_approved_at}
+				<div class="rounded-2xl border-2 border-emerald-300 bg-emerald-50/60 p-5 shadow-xs flex items-center justify-between gap-4 animate-in fade-in duration-200">
+					<div class="flex items-center gap-3.5">
+						<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-2xs">
+							<span class="material-symbols-outlined text-[24px]">verified</span>
+						</div>
+						<div>
+							<div class="flex items-center gap-2">
+								<span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-label-xs font-bold uppercase tracking-wider text-emerald-800 border border-emerald-300">
+									Estimate Approved
+								</span>
+								<span class="text-[12px] text-emerald-800">
+									Approved on {new Date(data.ticket.client_approved_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+								</span>
+							</div>
+							<p class="text-body-sm text-[var(--color-on-surface)] font-medium mt-0.5">
+								Thank you for approving the estimate ({data.ticket.estimated_hours ?? 0} hours). Our engineering team will start development shortly.
+							</p>
+						</div>
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Main 2-Column Content Canvas (8 cols left, 4 cols right) -->
@@ -585,77 +694,25 @@
 					</div>
 				</div>
 
-				<!-- Estimate Approval Card -->
-				{#if data.ticket.status === 'client_approval' && !data.ticket.client_approved_at}
-					<div class="rounded-xl border-2 border-amber-300 bg-amber-50/50 p-5 shadow-xs space-y-3">
-						<h3 class="text-base font-bold text-[var(--color-on-surface)] flex items-center gap-1.5">
-							<span class="material-symbols-outlined text-[20px] text-amber-600">pending_actions</span>
-							<span>Estimate Ready for Your Approval</span>
-						</h3>
-						<div class="rounded-lg bg-white border border-amber-200 p-3 flex items-center justify-between">
-							<span class="text-body-sm text-[var(--color-on-surface-variant)]">Estimated Effort</span>
-							<span class="text-title-md font-bold text-[var(--color-on-surface)]">
-								{data.ticket.estimated_hours !== null && data.ticket.estimated_hours !== undefined ? `${data.ticket.estimated_hours}h` : 'Not scoped'}
-							</span>
+				<!-- Technical Effort Scope Summary Card -->
+				{#if data.ticket.estimated_hours !== null && data.ticket.estimated_hours !== undefined}
+					<div class="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] p-5 shadow-xs space-y-2.5">
+						<span class="text-label-sm uppercase tracking-wider text-[var(--color-outline)] block">Technical Effort</span>
+						<div class="flex items-center justify-between">
+							<span class="text-body-sm text-[var(--color-on-surface-variant)] font-medium">Estimated Hours</span>
+							<span class="text-title-md font-bold text-[var(--color-on-surface)]">{data.ticket.estimated_hours}h</span>
 						</div>
-
-						{#if isViewer}
-							<p class="text-body-sm text-[var(--color-on-surface-variant)]">
-								Awaiting approval from an admin or raiser on your team — viewers can't approve estimates.
-							</p>
-						{:else}
-							<form
-								method="POST"
-								action="?/approveEstimate"
-								use:enhance={() => {
-									isSubmittingApproval = true;
-									return async ({ update }) => {
-										isSubmittingApproval = false;
-										approvalNotes = '';
-										await update();
-									};
-								}}
-								class="space-y-2.5"
-							>
-								<textarea
-									name="notes"
-									rows="2"
-									bind:value={approvalNotes}
-									placeholder="Optional notes for the team..."
-									class="w-full rounded-lg border border-[var(--color-border-subtle)] bg-white px-3 py-2 text-body-sm outline-none focus:border-[var(--color-primary)]"
-								></textarea>
-								<div class="flex items-center gap-2">
-									<button
-										type="submit"
-										disabled={isSubmittingApproval}
-										class="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-label-md font-semibold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 cursor-pointer"
-									>
-										<span class="material-symbols-outlined text-[18px]">check</span>
-										<span>Approve Estimate</span>
-									</button>
-									<button
-										type="submit"
-										formaction="?/requestEstimateChanges"
-										disabled={isSubmittingApproval}
-										class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border-subtle)] bg-white px-4 py-2 text-label-md font-semibold text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-low)] transition-colors disabled:opacity-50 cursor-pointer"
-									>
-										<span class="material-symbols-outlined text-[18px]">undo</span>
-										<span>Request Changes</span>
-									</button>
-								</div>
-								<p class="text-[11px] text-[var(--color-on-surface-variant)]">Notes are required if requesting changes.</p>
-							</form>
+						{#if data.ticket.client_approved_at}
+							<div class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 pt-2 border-t border-[var(--color-border-subtle)]/40">
+								<span class="material-symbols-outlined text-[15px]">check_circle</span>
+								<span>Approved on {new Date(data.ticket.client_approved_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+							</div>
+						{:else if data.ticket.status === 'client_approval'}
+							<div class="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 pt-2 border-t border-[var(--color-border-subtle)]/40">
+								<span class="material-symbols-outlined text-[15px]">pending_actions</span>
+								<span>Awaiting your approval above</span>
+							</div>
 						{/if}
-					</div>
-				{:else if data.ticket.status === 'client_approval' && data.ticket.client_approved_at}
-					<div class="rounded-xl border border-emerald-300 bg-emerald-50/50 p-5 shadow-xs space-y-1.5">
-						<h3 class="text-base font-bold text-[var(--color-on-surface)] flex items-center gap-1.5">
-							<span class="material-symbols-outlined text-[20px] text-emerald-600">check_circle</span>
-							<span>Estimate Approved</span>
-						</h3>
-						<p class="text-body-sm text-[var(--color-on-surface-variant)]">
-							You approved this on {new Date(data.ticket.client_approved_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}. Our team will start development shortly.
-						</p>
 					</div>
 				{/if}
 
