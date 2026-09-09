@@ -13,6 +13,7 @@
 		roleLabel,
 		isClientRole
 	} from '$lib/portal/ticketDisplay';
+	import ConsoleLogsViewer from '$lib/components/tickets/ConsoleLogsViewer.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -76,7 +77,10 @@
 		})),
 		attachments: data.attachments
 			.filter((a) => !a.message_id)
-			.map((a) => ({ id: a.id, name: a.file_name, size: formatBytes(a.file_size_bytes), type: attachmentType(a.mime_type) }))
+			.map((a) => ({ id: a.id, name: a.file_name, size: formatBytes(a.file_size_bytes), type: attachmentType(a.mime_type) })),
+		diagnostics: data.ticket.diagnostics,
+		source: data.ticket.source,
+		externalRef: data.ticket.external_ref
 	});
 
 	let replyText = $state('');
@@ -142,6 +146,12 @@
 						<span class="px-2.5 py-0.5 rounded-full bg-[var(--color-surface-container-high)] text-[var(--color-on-surface-variant)] text-label-sm font-semibold uppercase tracking-wider">
 							{ticket.environment}
 						</span>
+						{#if ticket.diagnostics}
+							<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900 text-slate-200 text-label-sm font-semibold">
+								<span class="material-symbols-outlined text-[14px] text-indigo-400">terminal</span>
+								<span>Logs Attached</span>
+							</span>
+						{/if}
 					</div>
 					<h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-on-surface)]">
 						{ticket.title}
@@ -291,6 +301,24 @@
 								</p>
 							</div>
 						</div>
+					</div>
+				{/if}
+
+				<!-- Client Console Logs & Diagnostics Card -->
+				{#if ticket.diagnostics}
+					<div class="space-y-3">
+						<div class="flex items-center justify-between pb-2 border-b border-[var(--color-border-subtle)]">
+							<h2 class="text-xl font-bold text-[var(--color-on-surface)] flex items-center gap-2">
+								<span class="material-symbols-outlined text-[22px] text-indigo-600">terminal</span>
+								<span>Console Logs & Diagnostics</span>
+							</h2>
+							{#if ticket.externalRef}
+								<span class="text-body-xs font-mono text-[var(--color-outline)]">
+									Ref: {ticket.externalRef}
+								</span>
+							{/if}
+						</div>
+						<ConsoleLogsViewer diagnostics={ticket.diagnostics} />
 					</div>
 				{/if}
 

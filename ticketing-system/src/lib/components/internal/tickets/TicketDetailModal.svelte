@@ -11,6 +11,7 @@
 		formatMetricHours,
 		formatVariancePct
 	} from '$lib/portal/ticketDisplay';
+	import ConsoleLogsViewer from '$lib/components/tickets/ConsoleLogsViewer.svelte';
 
 	interface ProfileItem {
 		id: string;
@@ -63,6 +64,9 @@
 		attachments?: { id: string; file_name: string; file_size_bytes: number | null; mime_type: string | null }[];
 		messages?: { id: string; content: string; created_at: string; author: { full_name: string | null; role: string } | null }[];
 		created_at: string;
+		diagnostics?: unknown | null;
+		source?: string | null;
+		external_ref?: string | null;
 	}
 
 	interface ProjectTicketItem {
@@ -239,6 +243,24 @@
 							<span class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-label-xs font-bold text-red-700">
 								<span class="material-symbols-outlined text-[14px]">event_busy</span>
 								<span>Overdue</span>
+							</span>
+						{/if}
+						{#if ticket.diagnostics}
+							<span
+								class="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-0.5 text-label-xs font-semibold text-slate-200 border border-slate-700"
+								title="Client console logs and diagnostics attached"
+							>
+								<span class="material-symbols-outlined text-[13px] text-indigo-400">terminal</span>
+								<span>Logs Attached</span>
+							</span>
+						{/if}
+						{#if ticket.source === 'api'}
+							<span
+								class="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-0.5 text-label-xs font-semibold text-purple-700 border border-purple-200"
+								title={ticket.external_ref ? `API Ticket (External Ref: ${ticket.external_ref})` : 'Created via API'}
+							>
+								<span class="material-symbols-outlined text-[13px]">api</span>
+								<span>API{ticket.external_ref ? ` (${ticket.external_ref})` : ''}</span>
 							</span>
 						{/if}
 					</div>
@@ -910,6 +932,24 @@
 					<p class="text-body-sm text-[var(--color-on-surface)] whitespace-pre-wrap">
 						{ticket.description}
 					</p>
+				</div>
+			{/if}
+
+			<!-- Client Console Logs & Diagnostics -->
+			{#if ticket.diagnostics}
+				<div class="space-y-2">
+					<div class="flex items-center justify-between">
+						<span class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface)] flex items-center gap-1.5">
+							<span class="material-symbols-outlined text-[18px] text-indigo-600">terminal</span>
+							<span>Console Logs & Diagnostics</span>
+						</span>
+						{#if ticket.external_ref}
+							<span class="text-[11px] font-mono text-[var(--color-outline)]">
+								External Ref: {ticket.external_ref}
+							</span>
+						{/if}
+					</div>
+					<ConsoleLogsViewer diagnostics={ticket.diagnostics} />
 				</div>
 			{/if}
 

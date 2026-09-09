@@ -124,11 +124,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		);
 	}
 
-	// Verify organization alignment (user must belong to the authorized client or be super_admin/internal staff)
-	const isInternalOrAdmin = ['super_admin', 'poc', 'specialist', 'delivery_lead'].includes(existingProfile.role);
-	if (!isInternalOrAdmin && existingProfile.client_id && existingProfile.client_id !== auth.clientId) {
-		throw error(403, `User "${reporterEmail}" is not authorized for this client organization.`);
-	}
+	// Any user registered in the Ticketing System is authorized to report issues
 
 	const raisedByUserId = existingProfile.id;
 	const reporterRole = existingProfile.role;

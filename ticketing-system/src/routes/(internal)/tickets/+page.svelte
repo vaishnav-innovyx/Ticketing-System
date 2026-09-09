@@ -49,6 +49,9 @@
 		attachments?: { id: string; file_name: string; file_size_bytes: number | null; mime_type: string | null }[];
 		messages?: { id: string; content: string; created_at: string; author: { full_name: string | null; role: string } | null }[];
 		created_at: string;
+		diagnostics?: unknown | null;
+		source?: string | null;
+		external_ref?: string | null;
 	}
 
 	let { data } = $props();
@@ -531,6 +534,16 @@
 										{ticket.token || 'TICKET'}
 									</span>
 
+									{#if ticket.diagnostics}
+										<span
+											class="inline-flex items-center gap-1 rounded-md bg-slate-900 px-1.5 py-0.5 text-[10px] font-semibold text-slate-200 border border-slate-700"
+											title="Client console logs attached"
+										>
+											<span class="material-symbols-outlined text-[12px] text-indigo-400">terminal</span>
+											<span>Logs</span>
+										</span>
+									{/if}
+
 									<!-- Priority Pill with glowing dot -->
 									<span class="inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.8 text-[11px] font-semibold {priorityInfo.class}">
 										<span class="h-1.5 w-1.5 rounded-full {priorityInfo.dot}"></span>
@@ -639,6 +652,15 @@
 										<span class="font-mono text-label-xs font-bold text-[var(--color-primary)] group-hover:underline">
 											{ticket.token || 'TICKET'}
 										</span>
+										{#if ticket.diagnostics}
+											<span
+												class="inline-flex items-center gap-0.5 rounded-md bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold text-slate-200 border border-slate-700"
+												title="Console logs attached"
+											>
+												<span class="material-symbols-outlined text-[11px] text-indigo-400">terminal</span>
+												<span>Logs</span>
+											</span>
+										{/if}
 										{#if ticket.dependencyNotes?.length}
 											<span
 												class="inline-flex items-center gap-0.5 rounded-md border border-[var(--color-outline-variant)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-on-surface-variant)]"
@@ -770,9 +792,19 @@
 								>
 									<!-- Token & Priority -->
 									<div class="flex items-center justify-between text-[11px]">
-										<span class="font-mono font-bold text-[var(--color-primary)]">
-											{ticket.token || 'TICKET'}
-										</span>
+										<div class="flex items-center gap-1.5">
+											<span class="font-mono font-bold text-[var(--color-primary)]">
+												{ticket.token || 'TICKET'}
+											</span>
+											{#if ticket.diagnostics}
+												<span
+													class="inline-flex items-center rounded bg-slate-900 px-1 py-0.2 text-[9px] font-bold text-slate-200 border border-slate-700"
+													title="Console logs attached"
+												>
+													<span class="material-symbols-outlined text-[11px] text-indigo-400">terminal</span>
+												</span>
+											{/if}
+										</div>
 										<span class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold border {priorityInfo.class}">
 											<span class="h-1.5 w-1.5 rounded-full {priorityInfo.dot}"></span>
 											<span>{PRIORITY_LABEL[ticket.priority]}</span>
