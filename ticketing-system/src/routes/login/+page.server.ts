@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { supabaseAdmin } from '$lib/server/supabase';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession }, url }) => {
@@ -14,7 +15,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 		throw redirect(303, '/portal');
 	}
 
-	const { count } = await supabase
+	const { count } = await supabaseAdmin
 		.from('profiles')
 		.select('*', { count: 'exact', head: true })
 		.eq('role', 'super_admin');

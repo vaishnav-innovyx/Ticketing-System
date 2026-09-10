@@ -5,40 +5,28 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	try {
-		// Fetch clients from Supabase
 		const { data: dbClients, error: clientsError } = await supabase
 			.from('clients')
-			.select('id, code, name, seat_quota, created_at, updated_at')
-			.order('name');
+			.select(
+				`id, code, name, seat_quota, created_at, updated_at,
+				projects(id, client_id, code, name, created_at),
+				members:profiles(id, email, full_name, role, client_id, created_at),
+				tickets(id, title, description, category, status, client_id, project_id, raised_by, estimated_hours, actual_hours, created_at)`
+			)
+			.order('name')
+			.order('code', { referencedTable: 'projects' })
+			.order('created_at', { ascending: false, referencedTable: 'tickets' });
 
 		if (clientsError || !dbClients || dbClients.length === 0) {
 			return { clients: [] };
 		}
 
-		// Fetch projects, profiles, and tickets in parallel
-		const [projectsRes, profilesRes, ticketsRes] = await Promise.all([
-			supabase.from('projects').select('id, client_id, code, name, created_at').order('code'),
-			supabase.from('profiles').select('id, email, full_name, role, client_id, created_at'),
-			supabase.from('tickets').select('id, title, description, category, status, client_id, project_id, raised_by, estimated_hours, actual_hours, created_at').order('created_at', { ascending: false })
-		]);
-
-		const projects = projectsRes.data || [];
-		const profiles = profilesRes.data || [];
-		const tickets = ticketsRes.data || [];
-
-		// Assemble client data tree
-		const clients = dbClients.map((client) => {
-			const clientProjects = projects.filter((p) => p.client_id === client.id);
-			const clientMembers = profiles.filter((m) => m.client_id === client.id);
-			const clientTickets = tickets.filter((t) => t.client_id === client.id);
-
-			return {
-				...client,
-				projects: clientProjects,
-				members: clientMembers,
-				tickets: clientTickets
-			};
-		});
+		const clients = dbClients.map((client) => ({
+			...client,
+			projects: client.projects ?? [],
+			members: client.members ?? [],
+			tickets: client.tickets ?? []
+		}));
 
 		return { clients };
 	} catch {

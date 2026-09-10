@@ -2,80 +2,83 @@ import { fail } from '@sveltejs/kit';
 import { requireInternalRole } from '$lib/server/authz';
 import type { Actions, PageServerLoad } from './$types';
 
+const MESSAGE_FIELDS = 'id, ticket_id, content, created_at, author_id, author:profiles(full_name, role)';
+
 export const load: PageServerLoad = async ({ url, locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
 	if (!user) return { conversations: [], selectedTicket: null, messages: [] };
 
-	const [{ data: messages }, { data: tickets }, { data: reads }] = await Promise.all([
+	const selectedTicketId = url.searchParams.get('ticket');
+
+	const [{ data: dbTickets }, { data: reads }, { data: selectedTicketRow }] = await Promise.all([
+		// !inner restricts to tickets that already have at least one message -- a
+		// "conversation" list has nothing to show for a ticket that's never been messaged.
 		supabase
-			.from('ticket_messages')
-			.select('id, ticket_id, content, created_at, author_id, author:profiles(full_name, role)')
-			.order('created_at', { ascending: false }),
-		supabase.from('tickets').select('id, token, title, status, client:clients(name)'),
-		supabase.from('ticket_message_reads').select('ticket_id, last_read_at').eq('user_id', user.id)
+			.from('tickets')
+			.select(`id, token, title, status, client:clients(name), messages:ticket_messages!inner(${MESSAGE_FIELDS})`)
+			.order('created_at', { ascending: false, referencedTable: 'messages' }),
+		supabase.from('ticket_message_reads').select('ticket_id, last_read_at').eq('user_id', user.id),
+		selectedTicketId
+			? supabase
+					.from('tickets')
+					.select(`id, token, title, status, client:clients(name), messages:ticket_messages(${MESSAGE_FIELDS})`)
+					.eq('id', selectedTicketId)
+					.order('created_at', { ascending: true, referencedTable: 'messages' })
+					.maybeSingle()
+			: Promise.resolve({ data: null })
 	]);
 
 	const readMap = new Map((reads ?? []).map((r) => [r.ticket_id, r.last_read_at]));
-	const ticketsById = new Map((tickets ?? []).map((t) => [t.id, t]));
-	const allMessages = messages ?? [];
+	const one = <T>(v: T | T[] | null | undefined) => (Array.isArray(v) ? v[0] ?? null : v ?? null);
 
-	type MessageRow = (typeof allMessages)[number];
-	const conversationMap = new Map<string, { lastMessage: MessageRow; unreadCount: number }>();
+	const conversations = (dbTickets ?? [])
+		.map((t) => {
+			const msgs = t.messages ?? [];
+			const lastMessage = msgs[0];
+			if (!lastMessage) return null;
+			const client = one(t.client);
+			const author = one(lastMessage.author);
+			const lastRead = readMap.get(t.id);
+			const unreadCount = msgs.filter(
+				(m) => m.author_id !== user.id && (!lastRead || m.created_at > lastRead)
+			).length;
 
-	for (const m of allMessages) {
-		if (!ticketsById.has(m.ticket_id)) continue;
-		if (!conversationMap.has(m.ticket_id)) {
-			conversationMap.set(m.ticket_id, { lastMessage: m, unreadCount: 0 });
-		}
-		const lastRead = readMap.get(m.ticket_id);
-		if (m.author_id !== user.id && (!lastRead || m.created_at > lastRead)) {
-			conversationMap.get(m.ticket_id)!.unreadCount++;
-		}
-	}
-
-	const conversations = [...conversationMap.entries()]
-		.map(([ticketId, info]) => {
-			const t = ticketsById.get(ticketId)!;
-			const client = Array.isArray(t.client) ? t.client[0] : t.client;
-			const author = Array.isArray(info.lastMessage.author) ? info.lastMessage.author[0] : info.lastMessage.author;
 			return {
-				ticketId,
+				ticketId: t.id,
 				token: t.token,
 				title: t.title,
 				status: t.status,
 				clientName: client?.name ?? '',
-				lastMessagePreview: info.lastMessage.content,
-				lastMessageAt: info.lastMessage.created_at,
+				lastMessagePreview: lastMessage.content,
+				lastMessageAt: lastMessage.created_at,
 				lastMessageAuthorName: author?.full_name ?? 'Unknown',
-				unreadCount: info.unreadCount
+				unreadCount
 			};
 		})
+		.filter((c): c is NonNullable<typeof c> => c !== null)
 		.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
 
-	const selectedTicketId = url.searchParams.get('ticket');
 	let selectedTicket: { id: string; token: string | null; title: string; status: string; clientName: string } | null = null;
-	let threadMessages: MessageRow[] = [];
+	let threadMessages: ReturnType<typeof one>[] = [];
 
-	if (selectedTicketId && ticketsById.has(selectedTicketId)) {
-		const t = ticketsById.get(selectedTicketId)!;
-		const client = Array.isArray(t.client) ? t.client[0] : t.client;
-		selectedTicket = { id: t.id, token: t.token, title: t.title, status: t.status, clientName: client?.name ?? '' };
-		threadMessages = allMessages.filter((m) => m.ticket_id === selectedTicketId).slice().reverse();
+	if (selectedTicketRow) {
+		const client = one(selectedTicketRow.client);
+		selectedTicket = {
+			id: selectedTicketRow.id,
+			token: selectedTicketRow.token,
+			title: selectedTicketRow.title,
+			status: selectedTicketRow.status,
+			clientName: client?.name ?? ''
+		};
+		threadMessages = (selectedTicketRow.messages ?? []).map((m) => ({ ...m, author: one(m.author) }));
 
 		// Viewing a thread marks it read for this user.
 		await supabase
 			.from('ticket_message_reads')
-			.upsert({ user_id: user.id, ticket_id: selectedTicketId, last_read_at: new Date().toISOString() }, { onConflict: 'user_id,ticket_id' });
+			.upsert({ user_id: user.id, ticket_id: selectedTicketRow.id, last_read_at: new Date().toISOString() }, { onConflict: 'user_id,ticket_id' });
 	}
 
-	return {
-		conversations,
-		selectedTicket,
-		messages: threadMessages.map((m) => ({
-			...m,
-			author: Array.isArray(m.author) ? m.author[0] : m.author
-		}))
-	};
+	return { conversations, selectedTicket, messages: threadMessages };
 };
 
 export const actions: Actions = {

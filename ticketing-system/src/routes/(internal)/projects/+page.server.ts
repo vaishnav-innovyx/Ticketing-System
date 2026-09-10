@@ -14,17 +14,22 @@ async function validateDefaultPoc(defaultPocId: string | null): Promise<string |
 
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	try {
-		const [{ data: dbClients }, { data: dbProjects }, { data: dbTickets }, { data: dbMembers }, { data: dbProfiles }] = await Promise.all([
+		const [{ data: dbClients }, { data: dbProjects }, { data: dbProfiles }] = await Promise.all([
 			supabaseAdmin.from('clients').select('id, code, name').order('name'),
-			supabaseAdmin.from('projects').select('id, client_id, code, name, default_poc_id, created_at, clients(id, code, name)').order('created_at', { ascending: false }),
-			supabaseAdmin.from('tickets').select('id, project_id, status'),
-			supabaseAdmin.from('project_members').select('id, project_id, user_id'),
+			supabaseAdmin
+				.from('projects')
+				.select(
+					`id, client_id, code, name, default_poc_id, created_at,
+					client:clients(id, code, name),
+					tickets(id, status),
+					members:project_members(id, user_id, profile:profiles(id, full_name, email, role))`
+				)
+				.order('created_at', { ascending: false }),
 			supabaseAdmin.from('profiles').select('id, full_name, email, role').in('role', [...INTERNAL_TEAM_ROLES, 'super_admin'])
 		]);
 
 		const clients = dbClients || [];
 		const internalStaff = dbProfiles || [];
-		const profilesById = new Map(internalStaff.map((p) => [p.id, p]));
 
 		if (!dbProjects || dbProjects.length === 0) {
 			return {
@@ -34,12 +39,13 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 			};
 		}
 
+		const one = <T>(v: T | T[] | null) => (Array.isArray(v) ? v[0] ?? null : v ?? null);
+
 		const projects = dbProjects.map((p) => {
-			const projectTickets = (dbTickets || []).filter((t) => t.project_id === p.id);
-			const projectMembers = (dbMembers || []).filter((m) => m.project_id === p.id);
-			const clientInfo = Array.isArray(p.clients) ? p.clients[0] : p.clients;
+			const projectTickets = p.tickets ?? [];
+			const projectMembers = p.members ?? [];
 			const team = projectMembers
-				.map((m) => profilesById.get(m.user_id))
+				.map((m) => one(m.profile))
 				.filter(
 					(profile): profile is NonNullable<typeof profile> =>
 						!!profile && (INTERNAL_TEAM_ROLES as readonly string[]).includes(profile.role)
@@ -52,7 +58,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 				name: p.name,
 				default_poc_id: p.default_poc_id,
 				created_at: p.created_at,
-				client: clientInfo ?? { id: p.client_id, name: 'Unknown Client', code: 'UNK' },
+				client: one(p.client) ?? { id: p.client_id, name: 'Unknown Client', code: 'UNK' },
 				ticket_count: projectTickets.length,
 				active_ticket_count: projectTickets.filter((t) => t.status !== 'closed').length,
 				member_count: projectMembers.length,

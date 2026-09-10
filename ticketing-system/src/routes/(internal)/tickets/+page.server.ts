@@ -12,101 +12,69 @@ const STAGE_EVENT_KEY_OVERRIDES: Partial<Record<string, StageEventKey>> = {
 	poc_triage: 'poc_triaged'
 };
 
+const INTERNAL_STAFF_ROLES = ['super_admin', 'poc', 'specialist', 'delivery_lead'] as const;
+
 export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 	try {
 		const [
 			{ data: dbTickets, error: ticketsError },
 			{ data: dbClients },
 			{ data: dbProjects },
-			{ data: dbProfiles },
-			{ data: dbEvents },
-			{ data: dbDependencies },
-			{ data: dbDependencyNotes },
-			{ data: dbWatchers },
-			{ data: dbAttachments },
-			{ data: dbMessages }
+			{ data: dbInternalStaff }
 		] = await Promise.all([
 			supabase
 				.from('tickets')
-				.select('*, client:clients(id, name, code), project:projects(id, name, code)')
-				.order('created_at', { ascending: false }),
+				.select(
+					`*,
+					client:clients(id, name, code),
+					project:projects(id, name, code),
+					raised_by_profile:profiles!tickets_raised_by_fkey(id, full_name, email, role),
+					poc_profile:profiles!tickets_poc_id_fkey(id, full_name, email, role),
+					specialist_profile:profiles!tickets_specialist_id_fkey(id, full_name, email, role),
+					delivery_lead_profile:profiles!tickets_delivery_lead_id_fkey(id, full_name, email, role),
+					events:ticket_events(*, actor:profiles(full_name, email)),
+					dependencies:ticket_dependencies!ticket_dependencies_ticket_id_fkey(id, depends_on:tickets!ticket_dependencies_depends_on_ticket_id_fkey(id, token, title, status)),
+					dependencyNotes:ticket_dependency_notes(id, ticket_id, kind, label, detail),
+					watchers:ticket_watchers(id, ticket_id, email, full_name),
+					attachments:ticket_attachments(id, ticket_id, file_name, file_size_bytes, mime_type, message_id),
+					messages:ticket_messages(id, ticket_id, content, created_at, author:profiles(full_name, role))`
+				)
+				.order('created_at', { ascending: false })
+				.order('created_at', { ascending: true, referencedTable: 'events' })
+				.order('created_at', { ascending: false, referencedTable: 'attachments' })
+				.order('created_at', { ascending: true, referencedTable: 'messages' }),
 			supabase.from('clients').select('id, code, name').order('name'),
 			supabase.from('projects').select('id, code, name, client_id').order('code'),
-			supabase.from('profiles').select('id, full_name, email, role'),
-			supabase.from('ticket_events').select('*, actor:profiles(full_name, email)').order('created_at', { ascending: true }),
-			supabase
-				.from('ticket_dependencies')
-				.select(
-					'id, ticket_id, depends_on:tickets!ticket_dependencies_depends_on_ticket_id_fkey(id, token, title, status)'
-				),
-			supabase.from('ticket_dependency_notes').select('id, ticket_id, kind, label, detail'),
-			supabase.from('ticket_watchers').select('id, ticket_id, email, full_name'),
-			supabase
-				.from('ticket_attachments')
-				.select('id, ticket_id, file_name, file_size_bytes, mime_type, message_id')
-				.order('created_at', { ascending: false }),
-			supabase
-				.from('ticket_messages')
-				.select('id, ticket_id, content, created_at, author:profiles(full_name, role)')
-				.order('created_at', { ascending: true })
+			supabase.from('profiles').select('id, full_name, email, role').in('role', INTERNAL_STAFF_ROLES)
 		]);
 
 		const clients = dbClients || [];
 		const projects = dbProjects || [];
-		const profiles = dbProfiles || [];
-		const events = dbEvents || [];
-		const dependencies = dbDependencies || [];
-		const dependencyNotes = dbDependencyNotes || [];
-		const watchers = dbWatchers || [];
-		const attachments = dbAttachments || [];
-		const messages = dbMessages || [];
+		const internalStaff = dbInternalStaff || [];
 
 		if (ticketsError || !dbTickets) {
-			return {
-				tickets: [],
-				clients,
-				projects,
-				internalStaff: profiles.filter((p) => !['client_admin', 'project_admin', 'client_raiser', 'client_viewer'].includes(p.role))
-			};
+			return { tickets: [], clients, projects, internalStaff };
 		}
 
-		const tickets = dbTickets.map((t) => {
-			const ticketEvents = events.filter((e) => e.ticket_id === t.id);
-			const ticketDependencies = dependencies
-				.filter((d) => d.ticket_id === t.id)
-				.map((d) => ({
-					id: d.id,
-					depends_on: Array.isArray(d.depends_on) ? d.depends_on[0] : d.depends_on
-				}))
-				.filter((d) => d.depends_on);
-			const clientInfo = Array.isArray(t.client) ? t.client[0] : t.client;
-			const projectInfo = Array.isArray(t.project) ? t.project[0] : t.project;
+		const one = <T>(v: T | T[] | null) => (Array.isArray(v) ? v[0] ?? null : v ?? null);
 
-			return {
-				...t,
-				client: clientInfo ?? null,
-				project: projectInfo ?? null,
-				raised_by_profile: profiles.find((p) => p.id === t.raised_by) ?? null,
-				poc_profile: profiles.find((p) => p.id === t.poc_id) ?? null,
-				specialist_profile: profiles.find((p) => p.id === t.specialist_id) ?? null,
-				delivery_lead_profile: profiles.find((p) => p.id === t.delivery_lead_id) ?? null,
-				events: ticketEvents,
-				dependencies: ticketDependencies,
-				dependencyNotes: dependencyNotes.filter((n) => n.ticket_id === t.id),
-				watchers: watchers.filter((w) => w.ticket_id === t.id),
-				attachments: attachments.filter((a) => a.ticket_id === t.id),
-				messages: messages
-					.filter((m) => m.ticket_id === t.id)
-					.map((m) => ({
-						...m,
-						author: Array.isArray(m.author) ? m.author[0] : m.author
-					}))
-			};
-		});
-
-		const internalStaff = profiles.filter((p) =>
-			['super_admin', 'poc', 'specialist', 'delivery_lead'].includes(p.role)
-		);
+		const tickets = dbTickets.map((t) => ({
+			...t,
+			client: one(t.client),
+			project: one(t.project),
+			raised_by_profile: one(t.raised_by_profile),
+			poc_profile: one(t.poc_profile),
+			specialist_profile: one(t.specialist_profile),
+			delivery_lead_profile: one(t.delivery_lead_profile),
+			events: (t.events ?? []).map((e) => ({ ...e, actor: one(e.actor) })),
+			dependencies: (t.dependencies ?? [])
+				.map((d) => ({ id: d.id, depends_on: one(d.depends_on) }))
+				.filter((d) => d.depends_on),
+			dependencyNotes: t.dependencyNotes ?? [],
+			watchers: t.watchers ?? [],
+			attachments: t.attachments ?? [],
+			messages: (t.messages ?? []).map((m) => ({ ...m, author: one(m.author) }))
+		}));
 
 		return { tickets, clients, projects, internalStaff };
 	} catch {

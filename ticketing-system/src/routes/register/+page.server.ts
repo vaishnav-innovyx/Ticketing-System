@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 	}
 
 	// Check if any Super Admin already exists in profiles table
-	const { count } = await supabase
+	const { count } = await supabaseAdmin
 		.from('profiles')
 		.select('*', { count: 'exact', head: true })
 		.eq('role', 'super_admin');
@@ -28,7 +28,7 @@ export const actions: Actions = {
 		const confirmPassword = String(formData.get('confirmPassword') || '');
 
 		// Double check if super_admin exists
-		const { count } = await supabase
+		const { count } = await supabaseAdmin
 			.from('profiles')
 			.select('*', { count: 'exact', head: true })
 			.eq('role', 'super_admin');
