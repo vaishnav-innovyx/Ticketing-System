@@ -30,6 +30,8 @@
 		target_date?: string | null;
 		estimated_hours?: number | null;
 		actual_hours?: number | null;
+		admin_rejected_at?: string | null;
+		admin_rejection_reason?: string | null;
 		client_id: string;
 		project_id: string;
 		raised_by?: string | null;
@@ -605,9 +607,15 @@
 
 						<!-- Card Footer: Status & Lifecycle Action -->
 						<div class="mt-4 pt-3 border-t border-[var(--color-outline-variant)]/40 flex items-center justify-between">
-							<span class="inline-flex items-center gap-1 rounded-md border px-2.5 py-0.8 text-label-xs font-bold {statusBadge}">
-								<span>{STATUS_LABEL[ticket.status]}</span>
-							</span>
+							{#if ticket.admin_rejected_at}
+								<span class="inline-flex items-center gap-1 rounded-md border-transparent bg-[var(--color-error-container)] px-2.5 py-0.8 text-label-xs font-bold text-[var(--color-on-error-container)]">
+									<span>Rejected</span>
+								</span>
+							{:else}
+								<span class="inline-flex items-center gap-1 rounded-md border px-2.5 py-0.8 text-label-xs font-bold {statusBadge}">
+									<span>{STATUS_LABEL[ticket.status]}</span>
+								</span>
+							{/if}
 
 							<div class="flex items-center gap-1.5 text-label-xs font-semibold text-[var(--color-primary)] group-hover:translate-x-0.5 transition-transform">
 								<span>Manage &rarr;</span>
@@ -705,9 +713,15 @@
 
 							<!-- Status -->
 							<td class="px-5 py-4">
-								<span class="inline-flex rounded-md border px-2.5 py-1 text-label-xs font-bold {getStatusBadge(ticket.status)}">
-									{STATUS_LABEL[ticket.status] ?? ticket.status}
-								</span>
+								{#if ticket.admin_rejected_at}
+									<span class="inline-flex rounded-md border-transparent bg-[var(--color-error-container)] px-2.5 py-1 text-label-xs font-bold text-[var(--color-on-error-container)]">
+										Rejected
+									</span>
+								{:else}
+									<span class="inline-flex rounded-md border px-2.5 py-1 text-label-xs font-bold {getStatusBadge(ticket.status)}">
+										{STATUS_LABEL[ticket.status] ?? ticket.status}
+									</span>
+								{/if}
 							</td>
 
 							<!-- Hours -->
@@ -802,6 +816,14 @@
 													title="Console logs attached"
 												>
 													<span class="material-symbols-outlined text-[11px] text-indigo-400">terminal</span>
+												</span>
+											{/if}
+											{#if ticket.admin_rejected_at}
+												<span
+													class="inline-flex items-center rounded border-transparent bg-[var(--color-error-container)] px-1 py-0.2 text-[9px] font-bold text-[var(--color-on-error-container)]"
+													title={ticket.admin_rejection_reason ?? 'Rejected by project admin'}
+												>
+													Rejected
 												</span>
 											{/if}
 										</div>

@@ -80,7 +80,7 @@
 	<div class="flex items-center gap-3">
 		<!-- Switch to Staff Workspace link -->
 		<a
-			href="/dashboard"
+			href="/"
 			class="hidden items-center gap-1.5 rounded-full border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)] px-3 py-1 text-label-sm font-medium text-[var(--color-on-surface-variant)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] lg:flex"
 		>
 			<span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>

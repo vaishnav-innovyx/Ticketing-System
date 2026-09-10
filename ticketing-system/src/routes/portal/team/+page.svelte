@@ -46,6 +46,8 @@
 
 	let searchQuery = $state('');
 	let selectedRoleFilter = $state('all');
+	let currentPage = $state(1);
+	const pageSize = 10;
 
 	let isAdding = $state(false);
 	let isSubmittingAdd = $state(false);
@@ -81,6 +83,15 @@
 			return matchesSearch && matchesRole;
 		})
 	);
+
+	$effect(() => {
+		searchQuery;
+		selectedRoleFilter;
+		currentPage = 1;
+	});
+
+	const totalPages = $derived(Math.max(1, Math.ceil(filteredMembers.length / pageSize)));
+	const paginatedMembers = $derived(filteredMembers.slice((currentPage - 1) * pageSize, currentPage * pageSize));
 
 	const totalCount = $derived(members.length);
 	const projectAdminCount = $derived(members.filter((m) => m.role === 'project_admin').length);
@@ -253,7 +264,7 @@
 							</td>
 						</tr>
 					{:else}
-						{#each filteredMembers as m}
+						{#each paginatedMembers as m}
 							{@const roleInfo = ROLE_DETAILS[m.role] ?? { label: m.role, badge: 'bg-gray-100 text-gray-800 border-gray-200', desc: '' }}
 							{@const initials = getInitials(m.full_name, m.email)}
 							<tr class="hover:bg-[var(--color-surface-container-lowest)]/80 transition-colors">
@@ -330,6 +341,33 @@
 				</tbody>
 			</table>
 		</div>
+
+		{#if filteredMembers.length > 0}
+			<div class="flex items-center justify-between border-t border-[var(--color-border-subtle)] px-5 py-3 text-body-xs text-[var(--color-on-surface-variant)]">
+				<span>
+					Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredMembers.length)} of {filteredMembers.length}
+				</span>
+				<div class="flex items-center gap-1.5">
+					<button
+						type="button"
+						class="rounded-lg border border-[var(--color-border-subtle)] px-3 h-8 text-label-xs font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+						disabled={currentPage === 1}
+						onclick={() => (currentPage = currentPage - 1)}
+					>
+						Previous
+					</button>
+					<span class="px-2">Page {currentPage} of {totalPages}</span>
+					<button
+						type="button"
+						class="rounded-lg border border-[var(--color-border-subtle)] px-3 h-8 text-label-xs font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+						disabled={currentPage === totalPages}
+						onclick={() => (currentPage = currentPage + 1)}
+					>
+						Next
+					</button>
+				</div>
+			</div>
+		{/if}
 	</div>
 </div>
 

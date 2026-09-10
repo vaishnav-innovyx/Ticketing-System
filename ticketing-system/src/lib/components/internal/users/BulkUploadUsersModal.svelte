@@ -68,6 +68,15 @@
 
 	const clientByCode = $derived(new Map(clients.map((c) => [c.code.toUpperCase(), c])));
 	const projectCodeSet = $derived(new Set(projects.map((p) => p.code.toUpperCase())));
+	const projectsByClient = $derived.by(() => {
+		const map = new Map<string, ProjectItem[]>();
+		for (const p of projects) {
+			const key = clients.find((c) => c.id === p.client_id)?.code ?? '—';
+			if (!map.has(key)) map.set(key, []);
+			map.get(key)!.push(p);
+		}
+		return map;
+	});
 
 	const validRows = $derived(parsedRows.filter((r) => r.valid));
 	const payload = $derived(
@@ -150,7 +159,7 @@
 					full_name: norm.full_name || '',
 					email: norm.email || '',
 					password: norm.password || '',
-					role: norm.role || '',
+					role: (norm.role || '').toLowerCase(),
 					client_code: norm.client_code || '',
 					project_codes: norm.project_codes || ''
 				});
@@ -261,12 +270,62 @@
 						<p class="mt-1 font-mono text-[12px]">{TEMPLATE_HEADERS.join(' · ')}</p>
 						<ul class="mt-2 list-disc space-y-0.5 pl-5 text-[12px]">
 							<li><span class="font-mono">password</span> optional — defaults to <span class="font-mono">ChangeMe123!</span></li>
+							<li><span class="font-mono">role</span> is case-insensitive — see valid values below</li>
 							{#if !fixedClient}
 								<li><span class="font-mono">client_code</span> required for <span class="font-mono">client_*</span> roles, blank for internal</li>
 							{/if}
 							<li><span class="font-mono">project_codes</span> optional, separate multiple with <span class="font-mono">, ; |</span></li>
 						</ul>
 					</div>
+
+					<details class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-low)] p-4 text-body-sm text-[var(--color-on-surface-variant)]">
+						<summary class="cursor-pointer font-semibold text-[var(--color-on-surface)]">
+							Valid values reference
+						</summary>
+						<div class={fixedClient ? 'mt-3 grid gap-4 sm:grid-cols-2' : 'mt-3 grid gap-4 sm:grid-cols-3'}>
+							<div>
+								<p class="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-on-surface)]">Roles</p>
+								<ul class="mt-1 max-h-40 space-y-0.5 overflow-y-auto pr-1 text-[12px]">
+									{#each allowedRoles as r}
+										<li><span class="font-mono">{r}</span> — {roleLabel(r)}</li>
+									{/each}
+								</ul>
+							</div>
+							{#if !fixedClient}
+								<div>
+									<p class="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-on-surface)]">Client codes</p>
+									<ul class="mt-1 max-h-40 space-y-0.5 overflow-y-auto pr-1 text-[12px]">
+										{#each clients as c}
+											<li><span class="font-mono">{c.code}</span> — {c.name}</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+							<div>
+								<p class="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-on-surface)]">Project codes</p>
+								{#if fixedClient}
+									<ul class="mt-1 max-h-40 space-y-0.5 overflow-y-auto pr-1 text-[12px]">
+										{#each projects as p}
+											<li><span class="font-mono">{p.code}</span> — {p.name}</li>
+										{/each}
+									</ul>
+								{:else}
+									<div class="mt-1 max-h-40 space-y-1.5 overflow-y-auto pr-1">
+										{#each [...projectsByClient.entries()] as [clientCode, ps]}
+											<div>
+												<p class="text-[11px] font-semibold text-[var(--color-on-surface)]">{clientCode}</p>
+												<ul class="space-y-0.5 pl-2 text-[12px]">
+													{#each ps as p}
+														<li><span class="font-mono">{p.code}</span> — {p.name}</li>
+													{/each}
+												</ul>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						</div>
+					</details>
 
 					<div class="flex flex-wrap items-center gap-3">
 						<label class="nexus-primary-button h-10 px-4 shadow-sm cursor-pointer inline-flex items-center gap-2">

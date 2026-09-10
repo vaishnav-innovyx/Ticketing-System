@@ -142,7 +142,7 @@ export const actions: Actions = {
 			const fullName = String(raw.full_name || '').trim();
 			const email = String(raw.email || '').trim().toLowerCase();
 			const password = String(raw.password || '').trim();
-			const role = String(raw.role || '').trim();
+			const role = String(raw.role || '').trim().toLowerCase();
 			const projectCodes = String(raw.project_codes || '')
 				.split(/[,;|]/)
 				.map((s) => s.trim().toUpperCase())
@@ -159,7 +159,17 @@ export const actions: Actions = {
 				continue;
 			}
 
-			const projectIds = projects.filter((p) => projectCodes.includes(p.code.toUpperCase())).map((p) => p.id);
+			const projectIds: string[] = [];
+			const badProjectCodes: string[] = [];
+			for (const pc of projectCodes) {
+				const match = projects.find((p) => p.code.toUpperCase() === pc);
+				if (!match) badProjectCodes.push(pc);
+				else projectIds.push(match.id);
+			}
+			if (badProjectCodes.length > 0) {
+				push('failed', `Unknown project code(s): ${badProjectCodes.join(', ')}.`);
+				continue;
+			}
 
 			const outcome = await provisionUser({
 				fullName,

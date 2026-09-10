@@ -45,6 +45,8 @@
 		requirement_completed_at?: string | null;
 		client_approved_at?: string | null;
 		closed_at?: string | null;
+		admin_rejected_at?: string | null;
+		admin_rejection_reason?: string | null;
 		client_id: string;
 		project_id: string;
 		raised_by?: string | null;
@@ -222,6 +224,15 @@
 						<span class="inline-flex rounded-md bg-indigo-50 px-2 py-0.5 text-label-xs font-bold text-indigo-700">
 							{STATUS_LABEL[ticket.status] ?? ticket.status}
 						</span>
+						{#if ticket.admin_rejected_at}
+							<span
+								class="inline-flex items-center gap-1 rounded-md border-transparent bg-[var(--color-error-container)] px-2 py-0.5 text-label-xs font-bold text-[var(--color-on-error-container)]"
+								title={ticket.admin_rejection_reason ?? undefined}
+							>
+								<span class="material-symbols-outlined text-[14px]">cancel</span>
+								<span>Rejected by Project Admin</span>
+							</span>
+						{/if}
 						{#if openBlockers.length > 0 && ticket.status !== 'closed'}
 							<span
 								class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-label-xs font-bold {BLOCKED_BADGE_CLASS}"
@@ -327,21 +338,34 @@
 						<span class="material-symbols-outlined text-[18px] text-[var(--color-primary)]">tune</span>
 						<span>Transition Lifecycle Stage</span>
 					</span>
-					<span class="text-[11px] text-[var(--color-outline)]">Current: {STATUS_LABEL[ticket.status]}</span>
+					{#if !ticket.admin_rejected_at}
+						<span class="text-[11px] text-[var(--color-outline)]">Current: {STATUS_LABEL[ticket.status]}</span>
+					{/if}
 				</div>
 
+				{#if ticket.admin_rejected_at}
+					<div class="flex items-center gap-1.5 rounded-md bg-[var(--color-error-container)] px-3 py-2 text-body-xs text-[var(--color-on-error-container)]">
+						<span class="material-symbols-outlined text-[16px]">block</span>
+						<span
+							>This ticket was rejected by the project admin{ticket.admin_rejection_reason
+								? `: "${ticket.admin_rejection_reason}"`
+								: '.'} No further stage transitions are allowed.</span
+						>
+					</div>
+				{:else}
 				<form
 					method="POST"
 					action="?/updateStatus"
 					use:enhance={() => {
 						isSubmitting = true;
 						return async ({ update }) => {
-							isSubmitting = false;
 							await update();
+							isSubmitting = false;
 						};
 					}}
 					class="flex flex-wrap items-center gap-2"
 				>
+					<fieldset disabled={isSubmitting} class="contents">
 					<input type="hidden" name="ticket_id" value={ticket.id} />
 
 					{#if ticket.status === 'raised'}
@@ -362,8 +386,13 @@
 							disabled={isSubmitting}
 							class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer"
 						>
-							<span class="material-symbols-outlined text-[16px]">schedule</span>
-							<span>Begin Effort Estimation</span>
+							{#if isSubmitting}
+								<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+								<span>Updating&hellip;</span>
+							{:else}
+								<span class="material-symbols-outlined text-[16px]">schedule</span>
+								<span>Begin Effort Estimation</span>
+							{/if}
 						</button>
 					{:else if ticket.status === 'requirement_estimation'}
 						<button
@@ -373,8 +402,13 @@
 							disabled={isSubmitting}
 							class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer"
 						>
-							<span class="material-symbols-outlined text-[16px]">send</span>
-							<span>Submit for Client Approval</span>
+							{#if isSubmitting}
+								<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+								<span>Updating&hellip;</span>
+							{:else}
+								<span class="material-symbols-outlined text-[16px]">send</span>
+								<span>Submit for Client Approval</span>
+							{/if}
 						</button>
 					{:else if ticket.status === 'client_approval'}
 						{#if ticket.client_approved_at}
@@ -389,8 +423,13 @@
 								disabled={isSubmitting}
 								class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700"
 							>
-								<span class="material-symbols-outlined text-[16px]">play_arrow</span>
-								<span>Start Development</span>
+								{#if isSubmitting}
+									<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+									<span>Updating&hellip;</span>
+								{:else}
+									<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+									<span>Start Development</span>
+								{/if}
 							</button>
 						{:else if currentUserRole === 'super_admin'}
 							<button
@@ -401,8 +440,13 @@
 								title="Override: normally the client approves this from the portal"
 								class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700"
 							>
-								<span class="material-symbols-outlined text-[16px]">play_arrow</span>
-								<span>Force Approve &amp; Start (Override)</span>
+								{#if isSubmitting}
+									<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+									<span>Updating&hellip;</span>
+								{:else}
+									<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+									<span>Force Approve &amp; Start (Override)</span>
+								{/if}
 							</button>
 						{:else}
 							<span class="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1.5 text-label-sm font-medium text-amber-700">
@@ -418,8 +462,13 @@
 							disabled={isSubmitting}
 							class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer bg-purple-600 hover:bg-purple-700"
 						>
-							<span class="material-symbols-outlined text-[16px]">local_shipping</span>
-							<span>Deploy / Deliver to Client</span>
+							{#if isSubmitting}
+								<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+								<span>Updating&hellip;</span>
+							{:else}
+								<span class="material-symbols-outlined text-[16px]">local_shipping</span>
+								<span>Deploy / Deliver to Client</span>
+							{/if}
 						</button>
 					{:else if ticket.status === 'delivery'}
 						<button
@@ -430,8 +479,13 @@
 							title={openBlockers.length > 0 ? `Blocked by ${openBlockers.map((d) => d.depends_on.token).join(', ')}` : undefined}
 							class="nexus-primary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer bg-gray-800 hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
 						>
-							<span class="material-symbols-outlined text-[16px]">verified</span>
-							<span>Verify & Close Ticket</span>
+							{#if isSubmitting}
+								<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+								<span>Updating&hellip;</span>
+							{:else}
+								<span class="material-symbols-outlined text-[16px]">verified</span>
+								<span>Verify & Close Ticket</span>
+							{/if}
 						</button>
 					{:else}
 						<button
@@ -441,8 +495,13 @@
 							disabled={isSubmitting}
 							class="nexus-secondary-button h-9 px-3.5 text-label-sm flex items-center gap-1.5 cursor-pointer"
 						>
-							<span class="material-symbols-outlined text-[16px]">replay</span>
-							<span>Reopen Ticket</span>
+							{#if isSubmitting}
+								<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+								<span>Updating&hellip;</span>
+							{:else}
+								<span class="material-symbols-outlined text-[16px]">replay</span>
+								<span>Reopen Ticket</span>
+							{/if}
 						</button>
 					{/if}
 
@@ -479,7 +538,9 @@
 							{/each}
 						</select>
 					{/if}
+				</fieldset>
 				</form>
+				{/if}
 			</div>
 
 			<!-- Delivery Metrics -->

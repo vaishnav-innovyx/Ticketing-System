@@ -11,7 +11,7 @@
 	let { activities = [] }: { activities?: ActivityItem[] } = $props();
 </script>
 
-<div class="nexus-card flex flex-col p-5 sm:p-6">
+<div class="nexus-card flex h-[420px] flex-col p-5 sm:p-6">
 	<!-- Header -->
 	<div class="mb-4 flex items-center justify-between border-b border-[var(--color-outline-variant)]/30 pb-3">
 		<h2 class="text-title-lg font-semibold text-[var(--color-on-surface)]">
@@ -26,7 +26,7 @@
 	</div>
 
 	<!-- Activity Feed Items -->
-	<div class="flex-1 space-y-4 overflow-y-auto pr-1">
+	<div class="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
 		{#if activities.length === 0}
 			<div class="flex flex-col items-center justify-center py-8 text-center text-body-xs text-[var(--color-on-surface-variant)]">
 				<span class="material-symbols-outlined text-[24px] mb-1 opacity-50">history</span>

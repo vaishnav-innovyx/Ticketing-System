@@ -9,7 +9,7 @@
 			<a href="/portal" class="hover:text-[var(--color-primary)] transition-colors">Help Center</a>
 			<a href="/portal/my-tickets" class="hover:text-[var(--color-primary)] transition-colors">Track Tickets</a>
 			<a href="/portal/submit" class="hover:text-[var(--color-primary)] transition-colors">Submit Request</a>
-			<a href="/dashboard" class="hover:text-[var(--color-primary)] transition-colors font-medium text-[var(--color-primary)]">Staff Workspace &rarr;</a>
+			<a href="/" class="hover:text-[var(--color-primary)] transition-colors font-medium text-[var(--color-primary)]">Staff Workspace &rarr;</a>
 		</div>
 	</div>
 </footer>

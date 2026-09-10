@@ -82,13 +82,14 @@
 				<span>Client Portal</span>
 			</a>
 
-			<button
-				type="button"
+			<a
+				href="/tickets"
 				class="nexus-primary-button h-10 px-4 py-2 shadow-sm"
+				title="Create a new ticket"
 			>
 				<span class="material-symbols-outlined text-[18px]">add</span>
 				<span>New Ticket</span>
-			</button>
+			</a>
 		</div>
 	</div>
 
@@ -162,17 +163,17 @@
 	{/if}
 
 	<!-- Middle Row: Ticket Activity Chart -->
-	<TicketActivityChart />
+	<TicketActivityChart chartData={data.chartData} />
 
 	<!-- Bottom Row: 3-column Widget Grid -->
-	<div class="grid grid-cols-1 gap-4 lg:grid-cols-3 md:gap-5">
+	<div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-3 md:gap-5">
 		<!-- Widget 1: Status Donut Chart -->
-		<TicketStatusDonut />
+		<TicketStatusDonut segments={data.segments} />
 
 		<!-- Widget 2: Priority Bar Chart -->
-		<TicketPriorityBars />
+		<TicketPriorityBars priorities={data.priorities} />
 
 		<!-- Widget 3: Recent Activity Feed -->
-		<RecentActivityList />
+		<RecentActivityList activities={data.activities} />
 	</div>
 </div>

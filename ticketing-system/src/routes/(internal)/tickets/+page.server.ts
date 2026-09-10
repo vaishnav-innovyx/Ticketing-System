@@ -171,8 +171,16 @@ export const actions: Actions = {
 			return fail(400, { error: 'Ticket ID and target status are required.' });
 		}
 
-		const { data: currentTicket } = await supabase.from('tickets').select('status, client_approved_at').eq('id', ticketId).single();
+		const { data: currentTicket } = await supabase
+			.from('tickets')
+			.select('status, client_approved_at, admin_rejected_at')
+			.eq('id', ticketId)
+			.single();
 		const fromStatus = currentTicket?.status || null;
+
+		if (currentTicket?.admin_rejected_at) {
+			return fail(400, { error: 'This ticket was rejected by the project admin and cannot be transitioned.' });
+		}
 
 		if (fromStatus === targetStatus) {
 			return { success: true };

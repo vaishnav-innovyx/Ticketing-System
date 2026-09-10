@@ -26,9 +26,12 @@
 
 	let { data } = $props();
 
+	let activeTab = $state<'internal' | 'client'>('internal');
 	let searchQuery = $state('');
 	let selectedRoleFilter = $state('all');
 	let selectedClientFilter = $state('all');
+	let currentPage = $state(1);
+	const pageSize = 10;
 	let isCreateModalOpen = $state(false);
 	let isBulkModalOpen = $state(false);
 	let selectedUser = $state<MemberItem | null>(null);
@@ -43,27 +46,56 @@
 	const clients = $derived(data.clients || []);
 	const projects = $derived(data.projects || []);
 
+	const ROLE_OPTIONS: Record<'internal' | 'client', { value: string; label: string }[]> = {
+		internal: [
+			{ value: 'super_admin', label: 'Super Admins' },
+			{ value: 'poc', label: 'Points of Contact' },
+			{ value: 'specialist', label: 'Tech Specialists' },
+			{ value: 'delivery_lead', label: 'Delivery Leads' }
+		],
+		client: [
+			{ value: 'client_admin', label: 'Client Admins' },
+			{ value: 'project_admin', label: 'Project Admins' },
+			{ value: 'client_raiser', label: 'Client Raisers' },
+			{ value: 'client_viewer', label: 'Client Viewers' }
+		]
+	};
+	const roleOptions = $derived(ROLE_OPTIONS[activeTab]);
+
+	const tabMembers = $derived(members.filter((m) => (activeTab === 'internal' ? !m.client_id : !!m.client_id)));
+
 	const filteredMembers = $derived(
-		members.filter((m) => {
+		tabMembers.filter((m) => {
 			const matchesSearch =
 				(m.full_name && m.full_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
 				m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				(m.client?.name && m.client.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-			const matchesRole =
-				selectedRoleFilter === 'all' ||
-				(selectedRoleFilter === 'internal' && !m.client_id) ||
-				(selectedRoleFilter === 'client' && !!m.client_id) ||
-				m.role === selectedRoleFilter;
+			const matchesRole = selectedRoleFilter === 'all' || m.role === selectedRoleFilter;
 
 			const matchesClient =
-				selectedClientFilter === 'all' ||
-				(selectedClientFilter === 'internal' && !m.client_id) ||
-				m.client_id === selectedClientFilter;
+				activeTab === 'internal' || selectedClientFilter === 'all' || m.client_id === selectedClientFilter;
 
 			return matchesSearch && matchesRole && matchesClient;
 		})
 	);
+
+	$effect(() => {
+		activeTab;
+		searchQuery;
+		selectedRoleFilter;
+		selectedClientFilter;
+		currentPage = 1;
+	});
+
+	function selectTab(tab: 'internal' | 'client') {
+		activeTab = tab;
+		selectedRoleFilter = 'all';
+		selectedClientFilter = 'all';
+	}
+
+	const totalPages = $derived(Math.max(1, Math.ceil(filteredMembers.length / pageSize)));
+	const paginatedMembers = $derived(filteredMembers.slice((currentPage - 1) * pageSize, currentPage * pageSize));
 
 	const totalUsers = $derived(members.length);
 	const internalStaffCount = $derived(members.filter((m) => !m.client_id).length);
@@ -234,6 +266,28 @@
 		</div>
 	</div>
 
+	<!-- Tabs -->
+	<div class="flex items-center gap-1 border-b border-[var(--color-outline-variant)]/60">
+		<button
+			type="button"
+			class="px-4 py-2.5 text-label-md font-semibold border-b-2 -mb-px transition-colors cursor-pointer {activeTab === 'internal'
+				? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+				: 'border-transparent text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]'}"
+			onclick={() => selectTab('internal')}
+		>
+			Internal Staff ({internalStaffCount})
+		</button>
+		<button
+			type="button"
+			class="px-4 py-2.5 text-label-md font-semibold border-b-2 -mb-px transition-colors cursor-pointer {activeTab === 'client'
+				? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+				: 'border-transparent text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]'}"
+			onclick={() => selectTab('client')}
+		>
+			Client Staff ({clientUsersCount})
+		</button>
+	</div>
+
 	<!-- Controls Toolbar -->
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 		<div class="flex flex-1 items-center gap-3">
@@ -254,28 +308,22 @@
 				class="h-10 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)]"
 			>
 				<option value="all">All Roles</option>
-				<option value="internal">Internal Staff Only</option>
-				<option value="client">Client Users Only</option>
-				<option value="super_admin">Super Admins</option>
-				<option value="poc">Points of Contact</option>
-				<option value="specialist">Tech Specialists</option>
-				<option value="delivery_lead">Delivery Leads</option>
-				<option value="client_admin">Client Admins</option>
-				<option value="project_admin">Project Admins</option>
-				<option value="client_raiser">Client Raisers</option>
-				<option value="client_viewer">Client Viewers</option>
-			</select>
-
-			<select
-				bind:value={selectedClientFilter}
-				class="h-10 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)]"
-			>
-				<option value="all">All Organizations</option>
-				<option value="internal">Company X (Internal)</option>
-				{#each clients as client}
-					<option value={client.id}>{client.name} ({client.code})</option>
+				{#each roleOptions as opt}
+					<option value={opt.value}>{opt.label}</option>
 				{/each}
 			</select>
+
+			{#if activeTab === 'client'}
+				<select
+					bind:value={selectedClientFilter}
+					class="h-10 rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3 text-body-sm text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)]"
+				>
+					<option value="all">All Organizations</option>
+					{#each clients as client}
+						<option value={client.id}>{client.name} ({client.code})</option>
+					{/each}
+				</select>
+			{/if}
 		</div>
 	</div>
 
@@ -293,7 +341,7 @@
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-[var(--color-outline-variant)]/30">
-				{#each filteredMembers as member}
+				{#each paginatedMembers as member}
 					{@const roleBadge = getRoleBadge(member.role)}
 					{@const initials = (member.full_name || member.email || 'U').split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()}
 					<tr class="hover:bg-[var(--color-surface-container-low)]/60 transition-colors group">
@@ -425,6 +473,33 @@
 			</tbody>
 		</table>
 	</div>
+
+	{#if filteredMembers.length > 0}
+		<div class="flex items-center justify-between border-t border-[var(--color-outline-variant)]/40 px-5 py-3 text-body-xs text-[var(--color-on-surface-variant)]">
+			<span>
+				Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredMembers.length)} of {filteredMembers.length}
+			</span>
+			<div class="flex items-center gap-1.5">
+				<button
+					type="button"
+					class="nexus-secondary-button h-8 px-3 text-label-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+					disabled={currentPage === 1}
+					onclick={() => (currentPage = currentPage - 1)}
+				>
+					Previous
+				</button>
+				<span class="px-2">Page {currentPage} of {totalPages}</span>
+				<button
+					type="button"
+					class="nexus-secondary-button h-8 px-3 text-label-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+					disabled={currentPage === totalPages}
+					onclick={() => (currentPage = currentPage + 1)}
+				>
+					Next
+				</button>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Create User Modal -->
 	<CreateUserModal
