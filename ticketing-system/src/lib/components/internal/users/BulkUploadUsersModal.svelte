@@ -31,6 +31,14 @@
 		action?: string;
 	} = $props();
 
+	// roleLabel() collapses client_raiser/client_viewer to "Client" for ticket-facing UI; this modal
+	// needs to disambiguate them so uploaders can tell which role a row actually got.
+	function uploadRoleLabel(role: string): string {
+		if (role === 'client_raiser') return 'Client Raiser';
+		if (role === 'client_viewer') return 'Client Viewer';
+		return roleLabel(role);
+	}
+
 	const CLIENT_ROLES = ['client_admin', 'project_admin', 'client_raiser', 'client_viewer'];
 	const INTERNAL_ROLES = ['super_admin', 'poc', 'specialist', 'delivery_lead'];
 	const allowedRoles = $derived(
@@ -287,7 +295,7 @@
 								<p class="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-on-surface)]">Roles</p>
 								<ul class="mt-1 max-h-40 space-y-0.5 overflow-y-auto pr-1 text-[12px]">
 									{#each allowedRoles as r}
-										<li><span class="font-mono">{r}</span> — {roleLabel(r)}</li>
+										<li><span class="font-mono">{r}</span> — {uploadRoleLabel(r)}</li>
 									{/each}
 								</ul>
 							</div>
@@ -385,17 +393,17 @@
 					</div>
 
 					<div class="overflow-x-auto rounded-xl border border-[var(--color-outline-variant)]/50 max-h-[46vh] overflow-y-auto">
-						<table class="w-full text-left text-body-xs">
+						<table class="w-full min-w-[640px] table-fixed text-left text-body-xs">
 							<thead class="sticky top-0 bg-[var(--color-surface-container-low)] text-label-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
 								<tr>
-									<th class="px-3 py-2">#</th>
-									<th class="px-3 py-2">Name</th>
-									<th class="px-3 py-2">Email</th>
-									<th class="px-3 py-2">Role</th>
+									<th class="w-10 px-3 py-2">#</th>
+									<th class="w-[16%] px-3 py-2">Name</th>
+									<th class="w-[22%] px-3 py-2">Email</th>
+									<th class="w-[14%] px-3 py-2">Role</th>
 									{#if !fixedClient}
-										<th class="px-3 py-2">Client</th>
+										<th class="w-[10%] px-3 py-2">Client</th>
 									{/if}
-									<th class="px-3 py-2">Projects</th>
+									<th class="w-[18%] px-3 py-2">Projects</th>
 									<th class="px-3 py-2">Status</th>
 								</tr>
 							</thead>
@@ -403,13 +411,13 @@
 								{#each parsedRows as row, i}
 									<tr class={row.valid ? '' : 'bg-[var(--color-error)]/5'}>
 										<td class="px-3 py-2 text-[var(--color-on-surface-variant)]">{i + 2}</td>
-										<td class="px-3 py-2">{row.full_name}</td>
-										<td class="px-3 py-2 font-mono">{row.email}</td>
-										<td class="px-3 py-2">{row.role ? roleLabel(row.role) : '—'}</td>
+										<td class="px-3 py-2 break-words">{row.full_name}</td>
+										<td class="px-3 py-2 break-all font-mono">{row.email}</td>
+										<td class="px-3 py-2 whitespace-nowrap">{row.role ? uploadRoleLabel(row.role) : '—'}</td>
 										{#if !fixedClient}
 											<td class="px-3 py-2">{row.client_code || '—'}</td>
 										{/if}
-										<td class="px-3 py-2">{row.project_codes || '—'}</td>
+										<td class="px-3 py-2 break-words">{row.project_codes || '—'}</td>
 										<td class="px-3 py-2">
 											{#if row.valid}
 												<span class="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 font-semibold text-emerald-700">

@@ -27,13 +27,8 @@
 		<!-- Soft Light Overlay Gradient for perfect readability -->
 		<div class="absolute inset-0 bg-gradient-to-t from-white/95 via-white/50 to-white/20 backdrop-blur-[2px]"></div>
 
-		<!-- Hero Content Stack (Increased Logo size with transparent background placed directly above text) -->
+		<!-- Hero Content Stack -->
 		<div class="relative z-10 max-w-xl space-y-6">
-			<!-- Increased Size Transparent Logo directly above text -->
-			<div>
-				<img src="/logo.png" alt="Resolv Support & Ticketing System" class="h-28 lg:h-36 w-auto object-contain filter drop-shadow-md" />
-			</div>
-
 			<div class="space-y-3">
 				<span class="inline-flex items-center gap-2 rounded-full bg-blue-50/90 px-4 py-1.5 text-xs font-bold text-[#1d5b8c] backdrop-blur-md border border-blue-200/80 shadow-sm">
 					<span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -61,6 +56,7 @@
 		<div class="my-auto mx-auto w-full max-w-md space-y-8">
 			<!-- Title & Subtitle -->
 			<div class="space-y-2">
+				<img src="/logo.png" alt="Resolv Support & Ticketing System" class="h-48 w-auto object-contain ml-auto mr-auto mb-2" />
 				<h1 class="text-3xl font-extrabold tracking-tight text-slate-900">Sign in</h1>
 				<p class="text-sm text-slate-500">Enter your credentials to access your support workspace.</p>
 			</div>
@@ -169,7 +165,7 @@
 
 		<!-- Footer Info -->
 		<div class="pt-6 text-center text-xs text-slate-400">
-			Protected by Resolv Security & Workspace Isolation
+			Powered By <a href="https://innovyxtechlabs.com/" class="text-blue-600 font-bold hover:text-blue-800">Innovyx Techlabs LLP</a>
 		</div>
 	</div>
 </div>

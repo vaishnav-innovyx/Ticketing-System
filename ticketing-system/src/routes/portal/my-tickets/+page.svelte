@@ -66,6 +66,19 @@
 		typeFilter = 'All';
 		appFilter = 'All';
 	}
+
+	const PAGE_SIZE = 15;
+	let currentPage = $state(1);
+
+	$effect(() => {
+		filteredTickets;
+		currentPage = 1;
+	});
+
+	const totalPages = $derived(Math.max(1, Math.ceil(filteredTickets.length / PAGE_SIZE)));
+	const paginatedTickets = $derived(
+		filteredTickets.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+	);
 </script>
 
 <svelte:head>
@@ -211,7 +224,7 @@
 							</td>
 						</tr>
 					{:else}
-						{#each filteredTickets as ticket}
+						{#each paginatedTickets as ticket}
 							<tr
 								class="hover:bg-[var(--color-surface-container-low)]/70 transition-colors cursor-pointer group {ticket.status === 'Awaiting Client Approval' || ticket.status === 'Awaiting Your Response' ? 'bg-[var(--color-primary-fixed)]/10' : ''}"
 								onclick={() => (window.location.href = `/portal/my-tickets/${ticket.id}`)}
@@ -278,5 +291,32 @@
 				</tbody>
 			</table>
 		</div>
+
+		{#if filteredTickets.length > 0}
+			<div class="flex items-center justify-between gap-4 border-t border-[var(--color-border-subtle)] px-4 py-3 text-body-sm text-[var(--color-on-surface-variant)]">
+				<span>
+					Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredTickets.length)} of {filteredTickets.length}
+				</span>
+				<div class="flex items-center gap-2">
+					<button
+						type="button"
+						class="rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-label-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-surface-container-low)] transition-colors cursor-pointer"
+						disabled={currentPage === 1}
+						onclick={() => (currentPage -= 1)}
+					>
+						Previous
+					</button>
+					<span class="text-label-md">Page {currentPage} of {totalPages}</span>
+					<button
+						type="button"
+						class="rounded-lg border border-[var(--color-border-subtle)] px-3 py-1.5 text-label-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-surface-container-low)] transition-colors cursor-pointer"
+						disabled={currentPage === totalPages}
+						onclick={() => (currentPage += 1)}
+					>
+						Next
+					</button>
+				</div>
+			</div>
+		{/if}
 	</div>
 </div>
