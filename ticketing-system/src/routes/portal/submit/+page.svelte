@@ -58,20 +58,6 @@
 
 	const submittedTicket = $derived(form?.ticket ?? null);
 
-	const teamSuggestions = [
-		{ name: 'Sarah Jenkins', email: 'sarah.j@acme.inc' },
-		{ name: 'Michael Chang', email: 'm.chang@acme.inc' },
-		{ name: 'Elena Rostova', email: 'e.rostova@acme.inc' },
-		{ name: 'Alex Morgan', email: 'alex.m@acme.inc' }
-	];
-
-	function addCcRecipient(member: { name: string; email: string }) {
-		emailError = '';
-		if (!ccRecipients.some((r) => r.email.toLowerCase() === member.email.toLowerCase())) {
-			ccRecipients = [...ccRecipients, member];
-		}
-	}
-
 	function handleAddCustomEmail() {
 		emailError = '';
 		const trimmed = ccEmailInput.trim();
@@ -88,14 +74,10 @@
 			return;
 		}
 
-		const foundSuggestion = teamSuggestions.find(
-			(s) => s.email.toLowerCase() === trimmed.toLowerCase()
-		);
-
 		ccRecipients = [
 			...ccRecipients,
 			{
-				name: foundSuggestion ? foundSuggestion.name : trimmed.split('@')[0],
+				name: trimmed.split('@')[0],
 				email: trimmed
 			}
 		];
@@ -340,33 +322,6 @@
 						{#if emailError}
 							<p class="text-[12px] font-medium text-[var(--color-error)]">{emailError}</p>
 						{/if}
-					</div>
-
-					<!-- Quick Suggestions from Acme Corp -->
-					<div class="space-y-2 pt-1">
-						<span class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-outline)]">
-							Suggested Acme Corp Members
-						</span>
-						<div class="flex flex-wrap gap-2">
-							{#each teamSuggestions as suggestion}
-								{@const isAdded = ccRecipients.some((r) => r.email === suggestion.email)}
-								<button
-									type="button"
-									onclick={() => (isAdded ? removeCcRecipient(suggestion.email) : addCcRecipient(suggestion))}
-									class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-body-sm transition-all cursor-pointer {isAdded
-										? 'border-[var(--color-primary)] bg-[var(--color-primary-fixed)]/30 text-[var(--color-primary)] font-semibold shadow-2xs'
-										: 'border-[var(--color-border-subtle)] bg-[var(--color-surface-container-low)]/50 text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)]'}"
-								>
-									<span class="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-primary-container)] text-[10px] font-bold text-white">
-										{suggestion.name.split(' ').map((n) => n[0]).join('')}
-									</span>
-									<span>{suggestion.name}</span>
-									<span class="material-symbols-outlined text-[14px]">
-										{isAdded ? 'check' : 'add'}
-									</span>
-								</button>
-							{/each}
-						</div>
 					</div>
 
 					<!-- Selected CC Recipients Chips -->
@@ -705,38 +660,22 @@
 						<h3 class="text-base font-bold text-[var(--color-on-surface)]">Response SLA</h3>
 					</div>
 					<div class="space-y-2.5 text-body-sm">
-						<div class="flex justify-between items-center border-b border-[var(--color-border-subtle)] pb-2">
-							<span class="font-medium text-[var(--color-on-surface)]">P0 – Critical Impact</span>
-							<span class="font-bold text-[var(--color-error)]">&lt; 1 hour</span>
+						<div class="border-b border-[var(--color-border-subtle)] pb-2">
+							<span class="font-medium text-[var(--color-error)]">P0 – Critical Impact</span>
+							<p class="text-[var(--color-on-surface-variant)]">System down or no workaround available.</p>
 						</div>
-						<div class="flex justify-between items-center border-b border-[var(--color-border-subtle)] pb-2">
-							<span class="font-medium text-[var(--color-on-surface)]">P1 – High Priority</span>
-							<span class="font-bold text-amber-600">&lt; 4 hours</span>
+						<div class="border-b border-[var(--color-border-subtle)] pb-2">
+							<span class="font-medium text-amber-600">P1 – High Priority</span>
+							<p class="text-[var(--color-on-surface-variant)]">Major feature broken, workaround exists.</p>
 						</div>
-						<div class="flex justify-between items-center border-b border-[var(--color-border-subtle)] pb-2">
+						<div class="border-b border-[var(--color-border-subtle)] pb-2">
 							<span class="font-medium text-[var(--color-on-surface)]">P2 – Medium Priority</span>
-							<span class="font-bold text-[var(--color-on-surface)]">&lt; 12 hours</span>
+							<p class="text-[var(--color-on-surface-variant)]">Minor feature issue with limited impact.</p>
 						</div>
-						<div class="flex justify-between items-center">
-							<span class="font-medium text-[var(--color-on-surface)]">P3 – Low / General</span>
-							<span class="font-bold text-[var(--color-outline)]">&lt; 24 hours</span>
+						<div>
+							<span class="font-medium text-[var(--color-outline)]">P3 – Low / General</span>
+							<p class="text-[var(--color-on-surface-variant)]">General question or cosmetic issue.</p>
 						</div>
-					</div>
-				</div>
-
-				<!-- Quick Knowledge Base Links -->
-				<div class="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] p-5 shadow-xs space-y-3">
-					<h3 class="text-base font-bold text-[var(--color-on-surface)]">Common Issues</h3>
-					<div class="space-y-2">
-						<a href="/portal" class="block text-body-sm text-[var(--color-primary)] hover:underline">
-							• How to clear browser invoice cache &rarr;
-						</a>
-						<a href="/portal" class="block text-body-sm text-[var(--color-primary)] hover:underline">
-							• Resetting 2FA for team members &rarr;
-						</a>
-						<a href="/portal" class="block text-body-sm text-[var(--color-primary)] hover:underline">
-							• Exporting quarterly sales CSV reports &rarr;
-						</a>
 					</div>
 				</div>
 			</div>

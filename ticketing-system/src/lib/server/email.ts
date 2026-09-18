@@ -126,17 +126,15 @@ export async function resolveTicketEmailRouting(
 		ccSet.add((ticket.delivery_lead_profile as any).email.toLowerCase());
 	}
 
-	// 7. Watchers: Included ONLY IF ticket.priority === 'critical' (P0)
-	if (ticket.priority === 'critical') {
-		const { data: watchers } = await supabaseAdmin
-			.from('ticket_watchers')
-			.select('email')
-			.eq('ticket_id', ticket.id);
+	// 7. Watchers
+	const { data: watchers } = await supabaseAdmin
+		.from('ticket_watchers')
+		.select('email')
+		.eq('ticket_id', ticket.id);
 
-		if (watchers) {
-			for (const w of watchers) {
-				if (w.email) ccSet.add(w.email.toLowerCase());
-			}
+	if (watchers) {
+		for (const w of watchers) {
+			if (w.email) ccSet.add(w.email.toLowerCase());
 		}
 	}
 

@@ -42,15 +42,6 @@
 </svelte:head>
 
 <div class="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 md:px-10 md:py-10 space-y-8">
-	<!-- Breadcrumb Navigation -->
-	<nav class="flex items-center gap-2 text-body-sm text-[var(--color-outline)]" aria-label="Breadcrumb">
-		<span class="hover:text-[var(--color-primary)] transition-colors cursor-pointer">Acme Corporation</span>
-		<span class="material-symbols-outlined text-[16px]">chevron_right</span>
-		<span class="hover:text-[var(--color-primary)] transition-colors cursor-pointer">Sales Dashboard</span>
-		<span class="material-symbols-outlined text-[16px]">chevron_right</span>
-		<span class="text-[var(--color-on-surface-variant)] font-semibold">Production</span>
-	</nav>
-
 	<!-- Welcome Hero -->
 	<section class="space-y-1.5">
 		<h1 class="text-3xl font-bold tracking-tight text-[var(--color-on-surface)] sm:text-4xl">

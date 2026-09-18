@@ -76,26 +76,16 @@
 		</nav>
 	</div>
 
-	<!-- Right Section: Staff switcher, Notification bell, Client Avatar -->
+	<!-- Right Section: Client Avatar -->
 	<div class="flex items-center gap-3">
-		<!-- Switch to Staff Workspace link -->
 		<a
-			href="/"
-			class="hidden items-center gap-1.5 rounded-full border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)] px-3 py-1 text-label-sm font-medium text-[var(--color-on-surface-variant)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] lg:flex"
+			href="/portal/settings"
+			class="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-on-surface-variant)] transition-colors hover:bg-[var(--color-surface-container)] hover:text-[var(--color-primary)]"
+			aria-label="Account settings"
+			title="Account settings"
 		>
-			<span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
-			<span>Staff View</span>
+			<span class="material-symbols-outlined text-[20px]">settings</span>
 		</a>
-
-		<!-- Notifications -->
-		<button
-			type="button"
-			class="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-on-surface-variant)] transition-colors hover:bg-[var(--color-surface-container)] hover:text-[var(--color-primary)] relative cursor-pointer"
-			aria-label="Notifications"
-		>
-			<span class="material-symbols-outlined text-[20px]">notifications</span>
-			<span class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[var(--color-error)]"></span>
-		</button>
 
 		<div class="hidden h-6 w-px bg-[var(--color-outline-variant)] sm:block"></div>
 

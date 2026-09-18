@@ -28,7 +28,7 @@ export interface MasterLayoutOptions {
 }
 
 const APP_NAME = publicEnv.PUBLIC_APP_NAME || 'Resolv Ticketing System';
-const SITE_URL = publicEnv.PUBLIC_SITE_URL || 'http://localhost:5173';
+const SITE_URL = publicEnv.PUBLIC_SITE_URL || 'http://localhost:5174';
 const COMPANY_NAME = privateEnv.EMAIL_COMPANY_NAME || 'Innovyx Tech Labs';
 const SUPPORT_ADDRESS = privateEnv.EMAIL_SUPPORT_ADDRESS || 'alerts@innovyxtechlabs.com';
 

@@ -48,11 +48,11 @@
 					Submit a Ticket
 				</a>
 				<a
-					href="/"
-					class="rounded-lg p-2 text-label-lg font-medium text-[var(--color-primary)] hover:bg-[var(--color-surface-container-high)]"
+					href="/portal/settings"
+					class="rounded-lg p-2 text-label-lg font-medium text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)]"
 					onclick={() => (mobileNavOpen = false)}
 				>
-					Switch to Staff Workspace &rarr;
+					Account Settings
 				</a>
 			</nav>
 		</div>
