@@ -111,24 +111,30 @@ export type Database = {
           code: string
           created_at: string
           id: string
+          microsoft_tenant_id: string | null
           name: string
           seat_quota: number | null
+          status: string
           updated_at: string
         }
         Insert: {
           code: string
           created_at?: string
           id?: string
+          microsoft_tenant_id?: string | null
           name: string
           seat_quota?: number | null
+          status?: string
           updated_at?: string
         }
         Update: {
           code?: string
           created_at?: string
           id?: string
+          microsoft_tenant_id?: string | null
           name?: string
           seat_quota?: number | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -184,6 +190,109 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          id: string
+          email: string
+          full_name: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_type: string
+          client_id: string | null
+          project_ids: string[]
+          microsoft_tenant_id: string | null
+          status: string
+          created_by: string | null
+          created_at: string
+          expires_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          full_name: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_type?: string
+          client_id?: string | null
+          project_ids?: string[]
+          microsoft_tenant_id?: string | null
+          status?: string
+          created_by?: string | null
+          created_at?: string
+          expires_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          full_name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_type?: string
+          client_id?: string | null
+          project_ids?: string[]
+          microsoft_tenant_id?: string | null
+          status?: string
+          created_by?: string | null
+          created_at?: string
+          expires_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      audit_logs: {
+        Row: {
+          id: string
+          organization_id: string | null
+          actor_user_id: string | null
+          action: string
+          resource_type: string
+          resource_id: string | null
+          old_value: Json | null
+          new_value: Json | null
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id?: string | null
+          actor_user_id?: string | null
+          action: string
+          resource_type: string
+          resource_id?: string | null
+          old_value?: Json | null
+          new_value?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string | null
+          actor_user_id?: string | null
+          action?: string
+          resource_type?: string
+          resource_id?: string | null
+          old_value?: Json | null
+          new_value?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       profiles: {
         Row: {
           client_id: string | null
@@ -191,8 +300,12 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          microsoft_object_id: string | null
+          microsoft_tenant_id: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status: string
           updated_at: string
+          user_type: string
         }
         Insert: {
           client_id?: string | null
@@ -200,8 +313,12 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          microsoft_object_id?: string | null
+          microsoft_tenant_id?: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status?: string
           updated_at?: string
+          user_type?: string
         }
         Update: {
           client_id?: string | null
@@ -209,8 +326,12 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          microsoft_object_id?: string | null
+          microsoft_tenant_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string
           updated_at?: string
+          user_type?: string
         }
         Relationships: [
           {

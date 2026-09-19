@@ -36,6 +36,8 @@
 		code: string;
 		name: string;
 		seat_quota: number | null;
+		microsoft_tenant_id?: string | null;
+		status?: string;
 		created_at: string;
 		updated_at?: string;
 		projects: ProjectItem[];
@@ -49,10 +51,12 @@
 	}
 
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import CreateProjectModal from '$lib/components/internal/projects/CreateProjectModal.svelte';
 	import CreateUserModal from '$lib/components/internal/users/CreateUserModal.svelte';
 	import EditUserModal from '$lib/components/internal/users/EditUserModal.svelte';
 	import UserDetailModal from '$lib/components/internal/users/UserDetailModal.svelte';
+	import EditClientModal from '$lib/components/internal/clients/EditClientModal.svelte';
 
 	let { client, onClose }: Props = $props();
 
@@ -66,6 +70,7 @@
 	let isUserDetailModalOpen = $state(false);
 	let isDeleteModalOpen = $state(false);
 	let isDeleting = $state(false);
+	let isEditClientModalOpen = $state(false);
 	let deleteErrorMessage = $state<string | null>(null);
 
 	const isUnlimited = $derived(client.seat_quota === null || client.seat_quota === undefined || client.seat_quota <= 0);
@@ -83,6 +88,20 @@
 	const closedTickets = $derived(
 		client.tickets.filter((t) => t.status === 'closed' || t.status === 'delivered')
 	);
+
+	let copiedConsentUrl = $state(false);
+
+	async function copyConsentUrl() {
+		if (!client.microsoft_tenant_id) return;
+		const url = `https://login.microsoftonline.com/${client.microsoft_tenant_id}/adminconsent`;
+		try {
+			await navigator.clipboard.writeText(url);
+			copiedConsentUrl = true;
+			setTimeout(() => (copiedConsentUrl = false), 3000);
+		} catch (err) {
+			console.error('Failed to copy consent URL:', err);
+		}
+	}
 
 	// Status helpers
 	function getStatusBadge(status: string) {
@@ -204,6 +223,7 @@
 				<button
 					type="button"
 					class="nexus-primary-button h-9 px-3.5 text-label-md"
+					onclick={() => (isEditClientModalOpen = true)}
 				>
 					<span class="material-symbols-outlined text-[18px]">edit</span>
 					<span>Edit Client</span>
@@ -465,6 +485,90 @@
 							{/each}
 						</div>
 					{/if}
+				</div>
+
+				<!-- Microsoft SSO & Multi-Tenant Security Card (§21-§22) -->
+				<div class="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-container-lowest)] p-5">
+					<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--color-border-subtle)]/60 pb-4">
+						<div class="flex items-center gap-3">
+							<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+								<span class="material-symbols-outlined text-[22px]">corporate_fare</span>
+							</div>
+							<div>
+								<h4 class="text-title-sm font-bold text-[var(--color-on-surface)]">
+									Microsoft SSO & Tenant Integration
+								</h4>
+								<p class="text-body-xs text-[var(--color-on-surface-variant)]">
+									Enterprise multi-tenant authentication settings and status.
+								</p>
+							</div>
+						</div>
+
+						<div class="flex items-center gap-2">
+							<span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold {client.status === 'SUSPENDED' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+								<span class="h-2 w-2 rounded-full {client.status === 'SUSPENDED' ? 'bg-red-500' : 'bg-emerald-500'}"></span>
+								{client.status || 'ACTIVE'}
+							</span>
+
+							<!-- Toggle Organization Suspension -->
+							<form method="POST" action="?/toggleClientStatus" use:enhance>
+								<input type="hidden" name="client_id" value={client.id} />
+								<input type="hidden" name="status" value={client.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED'} />
+								<button
+									type="submit"
+									class="rounded-lg border px-3 py-1 text-xs font-bold transition-colors cursor-pointer {client.status === 'SUSPENDED' ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'}"
+								>
+									{client.status === 'SUSPENDED' ? 'Reactivate Org' : 'Suspend Org'}
+								</button>
+							</form>
+						</div>
+					</div>
+
+					<div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div class="space-y-1">
+							<span class="text-[12px] uppercase font-bold text-[var(--color-on-surface-variant)]">
+								Microsoft Entra Tenant ID
+							</span>
+							{#if client.microsoft_tenant_id}
+								<div class="flex items-center gap-2">
+									<code class="rounded bg-[var(--color-surface-container)] px-2 py-1 font-mono text-xs text-[var(--color-on-surface)]">
+										{client.microsoft_tenant_id}
+									</code>
+								</div>
+							{:else}
+								<p class="text-xs text-amber-700 font-medium">
+									Not configured (Client uses standard password auth until SSO tenant ID is linked).
+								</p>
+							{/if}
+						</div>
+
+						<div class="space-y-1">
+							<span class="text-[12px] uppercase font-bold text-[var(--color-on-surface-variant)]">
+								Tenant Admin Consent
+							</span>
+							{#if client.microsoft_tenant_id}
+								<div>
+									<button
+										type="button"
+										class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
+										onclick={copyConsentUrl}
+									>
+										<span class="material-symbols-outlined text-[16px]">
+											{copiedConsentUrl ? 'check' : 'content_copy'}
+										</span>
+										<span>{copiedConsentUrl ? 'Consent Link Copied!' : 'Copy Admin Consent URL'}</span>
+									</button>
+									<p class="text-[11px] text-[var(--color-outline)] mt-1">
+										Send to client's Microsoft 365 administrator for tenant-wide consent.
+									</p>
+								</div>
+							{:else}
+								<p class="text-xs text-[var(--color-outline)]">
+									Configure Microsoft Tenant ID to enable admin consent link generation.
+								</p>
+							{/if}
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -811,6 +915,13 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Edit Client Modal -->
+	<EditClientModal
+		bind:open={isEditClientModalOpen}
+		{client}
+		onClientUpdated={() => invalidateAll()}
+	/>
 
 	<!-- Create Project Modal -->
 	<CreateProjectModal

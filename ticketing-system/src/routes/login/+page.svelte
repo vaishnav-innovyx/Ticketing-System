@@ -61,6 +61,19 @@
 				<p class="text-sm text-slate-500">Enter your credentials to access your support workspace.</p>
 			</div>
 
+			<!-- SSO Error Alert Banner -->
+			{#if data?.ssoError}
+				<div class="rounded-xl border border-amber-300 bg-amber-50/95 p-4 text-xs shadow-sm space-y-1.5 animate-in fade-in duration-200">
+					<div class="flex items-start gap-2.5">
+						<span class="material-symbols-outlined text-[20px] text-amber-600 shrink-0 mt-0.5">lock_person</span>
+						<div>
+							<h4 class="font-bold text-amber-900 text-sm">Access Notice</h4>
+							<p class="text-amber-800 leading-relaxed mt-0.5 font-medium">{data.ssoError}</p>
+						</div>
+					</div>
+				</div>
+			{/if}
+
 			<!-- First Time System Setup Banner (Disappears automatically after first Super Admin registers) -->
 			{#if !data?.hasSuperAdmin}
 				<div class="rounded-xl border border-amber-300 bg-amber-50/90 p-4 text-center text-xs shadow-sm space-y-2 animate-in fade-in duration-200">
@@ -79,9 +92,35 @@
 				</div>
 			{/if}
 
-			<!-- Login Form -->
+			<!-- Microsoft SSO Primary Button -->
+			<form method="POST" action="?/signInWithMicrosoft">
+				<button
+					type="submit"
+					class="w-full flex items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-800 shadow-sm transition-all hover:border-slate-400 hover:shadow cursor-pointer group"
+				>
+					<!-- Microsoft SVG 4-color Logo -->
+					<svg class="h-5 w-5 shrink-0" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+						<rect x="1" y="1" width="9" height="9" fill="#f25022" />
+						<rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+						<rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+						<rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+					</svg>
+					<span class="group-hover:text-slate-900">Sign in with Microsoft 365</span>
+				</button>
+			</form>
+
+			<!-- Visual Divider -->
+			<div class="relative flex items-center justify-center">
+				<div class="w-full border-t border-slate-200"></div>
+				<span class="absolute bg-white px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
+					or continue with password
+				</span>
+			</div>
+
+			<!-- Password Login Form -->
 			<form
 				method="POST"
+				action="?/signInWithPassword"
 				use:enhance={() => {
 					isSubmitting = true;
 					return async ({ update }) => {
@@ -156,7 +195,7 @@
 						<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
 						<span>Authenticating...</span>
 					{:else}
-						<span>Sign in</span>
+						<span>Sign in with Password</span>
 						<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
 					{/if}
 				</button>

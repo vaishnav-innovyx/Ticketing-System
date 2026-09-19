@@ -11,11 +11,21 @@ export const load: LayoutServerLoad = async ({ locals: { supabase, safeGetSessio
 
 	const { data: profile } = await supabase
 		.from('profiles')
-		.select('id, full_name, email, role')
+		.select('id, full_name, email, role, status')
 		.eq('id', user.id)
 		.single();
 
-	if (!profile || !INTERNAL_ROLES.includes(profile.role)) {
+	if (!profile) {
+		await supabase.auth.signOut();
+		throw redirect(303, '/login');
+	}
+
+	if (profile.status !== 'ACTIVE') {
+		await supabase.auth.signOut();
+		throw redirect(303, `/login?error=account_${profile.status.toLowerCase()}`);
+	}
+
+	if (!INTERNAL_ROLES.includes(profile.role)) {
 		// If user has a client role, redirect to client portal; otherwise back to login
 		if (profile?.role?.startsWith('client_')) {
 			throw redirect(303, '/portal');

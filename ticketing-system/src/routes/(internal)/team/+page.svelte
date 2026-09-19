@@ -18,15 +18,30 @@
 		email: string;
 		full_name: string | null;
 		role: string;
+		status?: string;
+		user_type?: string;
+		microsoft_tenant_id?: string | null;
 		client_id: string | null;
 		client?: { id?: string; name?: string; code?: string } | null;
 		assigned_projects?: ProjectItem[];
 		created_at: string;
 	}
 
+	interface InvitationItem {
+		id: string;
+		email: string;
+		full_name: string;
+		role: string;
+		user_type: string;
+		client_id: string | null;
+		status: string;
+		created_at: string;
+		clients?: { id?: string; name?: string; code?: string } | null;
+	}
+
 	let { data } = $props();
 
-	let activeTab = $state<'internal' | 'client'>('internal');
+	let activeTab = $state<'internal' | 'client' | 'invitations'>('internal');
 	let searchQuery = $state('');
 	let selectedRoleFilter = $state('all');
 	let selectedClientFilter = $state('all');
@@ -43,6 +58,7 @@
 	let successMessage = $state<string | null>(null);
 
 	const members = $derived<MemberItem[]>(data.members || []);
+	const invitations = $derived<InvitationItem[]>(data.invitations || []);
 	const clients = $derived(data.clients || []);
 	const projects = $derived(data.projects || []);
 
@@ -60,9 +76,21 @@
 			{ value: 'client_viewer', label: 'Client Viewers' }
 		]
 	};
-	const roleOptions = $derived(ROLE_OPTIONS[activeTab]);
+	const roleOptions = $derived(activeTab === 'invitations' ? [] : ROLE_OPTIONS[activeTab]);
 
-	const tabMembers = $derived(members.filter((m) => (activeTab === 'internal' ? !m.client_id : !!m.client_id)));
+	const tabMembers = $derived(
+		activeTab === 'invitations'
+			? []
+			: members.filter((m) => (activeTab === 'internal' ? !m.client_id : !!m.client_id))
+	);
+
+	const filteredInvitations = $derived(
+		invitations.filter(
+			(inv) =>
+				(inv.full_name && inv.full_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+				inv.email.toLowerCase().includes(searchQuery.toLowerCase())
+		)
+	);
 
 	const filteredMembers = $derived(
 		tabMembers.filter((m) => {
@@ -88,7 +116,7 @@
 		currentPage = 1;
 	});
 
-	function selectTab(tab: 'internal' | 'client') {
+	function selectTab(tab: 'internal' | 'client' | 'invitations') {
 		activeTab = tab;
 		selectedRoleFilter = 'all';
 		selectedClientFilter = 'all';
@@ -286,6 +314,15 @@
 		>
 			Client Staff ({clientUsersCount})
 		</button>
+		<button
+			type="button"
+			class="px-4 py-2.5 text-label-md font-semibold border-b-2 -mb-px transition-colors cursor-pointer {activeTab === 'invitations'
+				? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+				: 'border-transparent text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]'}"
+			onclick={() => selectTab('invitations')}
+		>
+			SSO Pre-Registered Invitations ({invitations.length})
+		</button>
 	</div>
 
 	<!-- Controls Toolbar -->
@@ -327,6 +364,80 @@
 		</div>
 	</div>
 
+	{#if activeTab === 'invitations'}
+		<!-- SSO Invitations Table -->
+		<div class="overflow-x-auto rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] shadow-xs">
+			<table class="w-full text-left text-body-sm">
+				<thead class="border-b border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-low)] text-label-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+					<tr>
+						<th class="px-5 py-3.5">Invited User</th>
+						<th class="px-5 py-3.5">Target Role</th>
+						<th class="px-5 py-3.5">Organization</th>
+						<th class="px-5 py-3.5">Status</th>
+						<th class="px-5 py-3.5 whitespace-nowrap">Invited Date</th>
+						<th class="px-5 py-3.5 text-right whitespace-nowrap">Actions</th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-[var(--color-outline-variant)]/30">
+					{#if filteredInvitations.length === 0}
+						<tr>
+							<td colspan="6" class="px-5 py-8 text-center text-body-sm text-[var(--color-on-surface-variant)]">
+								No pending invitations found. Use the "Add User Account" button to invite users for Microsoft SSO.
+							</td>
+						</tr>
+					{:else}
+						{#each filteredInvitations as inv}
+							{@const roleBadge = getRoleBadge(inv.role)}
+							<tr class="hover:bg-[var(--color-surface-container-low)]/60 transition-colors">
+								<td class="px-5 py-4">
+									<div>
+										<p class="font-semibold text-[var(--color-on-surface)]">{inv.full_name}</p>
+										<p class="text-body-xs text-[var(--color-on-surface-variant)]">{inv.email}</p>
+									</div>
+								</td>
+								<td class="px-5 py-4">
+									<span class="inline-flex rounded-md border px-2.5 py-1 text-label-xs font-medium {roleBadge.bg}">
+										{roleBadge.label}
+									</span>
+								</td>
+								<td class="px-5 py-4">
+									{#if inv.clients}
+										<span class="inline-flex items-center gap-1.5 font-medium text-[var(--color-on-surface)]">
+											<span class="material-symbols-outlined text-[16px] text-[var(--color-outline)]">apartment</span>
+											<span>{inv.clients.name}</span>
+											<span class="font-mono text-label-xs text-[var(--color-on-surface-variant)]">({inv.clients.code})</span>
+										</span>
+									{:else}
+										<span class="text-[var(--color-primary)] font-semibold">Resolv Internal</span>
+									{/if}
+								</td>
+								<td class="px-5 py-4">
+									<span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+										<span class="material-symbols-outlined text-[14px]">hourglass_top</span>
+										<span>Pending SSO Login</span>
+									</span>
+								</td>
+								<td class="px-5 py-4 text-[12px] text-[var(--color-on-surface-variant)]">
+									{new Date(inv.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+								</td>
+								<td class="px-5 py-4 text-right">
+									<form method="POST" action="?/cancelInvitation" use:enhance class="inline">
+										<input type="hidden" name="invitation_id" value={inv.id} />
+										<button
+											type="submit"
+											class="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors cursor-pointer"
+										>
+											Revoke
+										</button>
+									</form>
+								</td>
+							</tr>
+						{/each}
+					{/if}
+				</tbody>
+			</table>
+		</div>
+	{:else}
 	<!-- Team Members Table -->
 	<div class="overflow-x-auto rounded-2xl border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container-lowest)] shadow-xs">
 		<table class="w-full text-left text-body-sm">
@@ -334,6 +445,7 @@
 				<tr>
 					<th class="px-5 py-3.5">User</th>
 					<th class="px-5 py-3.5">Role</th>
+					<th class="px-5 py-3.5">Status</th>
 					<th class="px-5 py-3.5">Organization</th>
 					<th class="px-5 py-3.5">Assigned Projects</th>
 					<th class="px-5 py-3.5 whitespace-nowrap">Added Date</th>
@@ -369,6 +481,14 @@
 						<td class="px-5 py-4">
 							<span class="inline-flex rounded-md border px-2.5 py-1 text-label-xs font-medium {roleBadge.bg}">
 								{roleBadge.label}
+							</span>
+						</td>
+
+						<!-- Status Badge -->
+						<td class="px-5 py-4">
+							<span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold {member.status === 'SUSPENDED' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+								<span class="h-1.5 w-1.5 rounded-full {member.status === 'SUSPENDED' ? 'bg-red-500' : 'bg-emerald-500'}"></span>
+								{member.status || 'ACTIVE'}
 							</span>
 						</td>
 
@@ -444,6 +564,19 @@
 								</button>
 
 								{#if member.id !== data.currentUserId}
+									<!-- Quick Suspend / Reactivate User -->
+									<form method="POST" action="?/toggleUserStatus" use:enhance class="inline">
+										<input type="hidden" name="user_id" value={member.id} />
+										<input type="hidden" name="status" value={member.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED'} />
+										<button
+											type="submit"
+											class="flex h-8 w-8 items-center justify-center shrink-0 rounded-lg border border-[var(--color-outline-variant)]/60 text-[var(--color-on-surface-variant)] hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 transition-colors cursor-pointer"
+											title={member.status === 'SUSPENDED' ? 'Reactivate User Account' : 'Suspend User Account'}
+										>
+											<span class="material-symbols-outlined text-[16px]">{member.status === 'SUSPENDED' ? 'lock_open' : 'block'}</span>
+										</button>
+									</form>
+
 									<button
 										type="button"
 										class="flex h-8 w-8 items-center justify-center shrink-0 rounded-lg border border-[var(--color-outline-variant)]/60 text-[var(--color-on-surface-variant)] hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)] hover:border-[var(--color-error)]/30 transition-colors cursor-pointer"
@@ -499,6 +632,7 @@
 				</button>
 			</div>
 		</div>
+	{/if}
 	{/if}
 
 	<!-- Create User Modal -->

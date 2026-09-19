@@ -8,9 +8,9 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 		const { data: dbClients, error: clientsError } = await supabase
 			.from('clients')
 			.select(
-				`id, code, name, seat_quota, created_at, updated_at,
+				`id, code, name, seat_quota, microsoft_tenant_id, status, created_at, updated_at,
 				projects(id, client_id, code, name, created_at),
-				members:profiles(id, email, full_name, role, client_id, created_at),
+				members:profiles(id, email, full_name, role, status, client_id, created_at),
 				tickets(id, title, description, category, status, client_id, project_id, raised_by, estimated_hours, actual_hours, created_at)`
 			)
 			.order('name')
@@ -48,6 +48,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const name = String(formData.get('name') || '').trim();
 		const code = String(formData.get('code') || '').trim().toUpperCase();
+		const microsoftTenantId = String(formData.get('microsoft_tenant_id') || '').trim() || null;
 		const isUnlimited = formData.get('is_unlimited') === 'true';
 		
 		let seatQuota: number | null = null;
@@ -69,9 +70,11 @@ export const actions: Actions = {
 			.insert({
 				name,
 				code,
-				seat_quota: seatQuota
+				seat_quota: seatQuota,
+				microsoft_tenant_id: microsoftTenantId,
+				status: 'ACTIVE'
 			})
-			.select('id, code, name, seat_quota, created_at')
+			.select('id, code, name, seat_quota, microsoft_tenant_id, status, created_at')
 			.single();
 
 		if (clientError) {
@@ -385,6 +388,79 @@ export const actions: Actions = {
 		}
 
 		return { success: true, updatedUserId: targetUserId };
+	},
+
+	toggleClientStatus: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+		if (profile?.role !== 'super_admin') {
+			return fail(403, { error: 'Only Super Admins can change organization status.' });
+		}
+
+		const formData = await request.formData();
+		const clientId = String(formData.get('client_id') || '').trim();
+		const targetStatus = String(formData.get('status') || 'ACTIVE').trim();
+
+		if (!clientId || !['ACTIVE', 'SUSPENDED'].includes(targetStatus)) {
+			return fail(400, { error: 'Invalid client ID or status.' });
+		}
+
+		const { error } = await supabaseAdmin
+			.from('clients')
+			.update({ status: targetStatus })
+			.eq('id', clientId);
+
+		if (error) {
+			return fail(500, { error: error.message });
+		}
+
+		return { success: true };
+	},
+
+	updateClient: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+		if (profile?.role !== 'super_admin') {
+			return fail(403, { error: 'Only Super Admins can update organizations.' });
+		}
+
+		const formData = await request.formData();
+		const clientId = String(formData.get('client_id') || '').trim();
+		const name = String(formData.get('name') || '').trim();
+		const microsoftTenantId = String(formData.get('microsoft_tenant_id') || '').trim() || null;
+		const isUnlimited = formData.get('is_unlimited') === 'true';
+
+		let seatQuota: number | null = null;
+		if (!isUnlimited) {
+			const seatQuotaRaw = Number(formData.get('seat_quota') || 5);
+			seatQuota = isNaN(seatQuotaRaw) || seatQuotaRaw < 1 ? 5 : Math.floor(seatQuotaRaw);
+		}
+
+		if (!clientId || !name) {
+			return fail(400, { error: 'Client ID and name are required.' });
+		}
+
+		const { error } = await supabaseAdmin
+			.from('clients')
+			.update({
+				name,
+				seat_quota: seatQuota,
+				microsoft_tenant_id: microsoftTenantId
+			})
+			.eq('id', clientId);
+
+		if (error) {
+			if (error.code === '23505') {
+				return fail(400, { error: 'Microsoft Tenant ID is already assigned to another organization.' });
+			}
+			return fail(500, { error: error.message });
+		}
+
+		return { success: true };
 	}
 };
 

@@ -1,25 +1,36 @@
 import { fail } from '@sveltejs/kit';
 import { supabaseAdmin } from '$lib/server/supabase';
-import { ASSIGNABLE_ROLES, isClientRole, provisionUser } from '$lib/server/users';
+import { ASSIGNABLE_ROLES, isClientRole, provisionUser, createInvitation } from '$lib/server/users';
+import { logAuditEvent } from '$lib/server/audit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	try {
 		const { user } = await safeGetSession();
-		const [{ data: dbProfiles }, { data: dbClients }, { data: dbProjects }, { data: dbMemberships }] = await Promise.all([
-			supabase.from('profiles').select('id, email, full_name, role, client_id, created_at, clients(id, name, code)').order('created_at', { ascending: false }),
+		const [{ data: dbProfiles }, { data: dbClients }, { data: dbProjects }, { data: dbMemberships }, { data: dbInvitations }] = await Promise.all([
+			supabase
+				.from('profiles')
+				.select('id, email, full_name, role, client_id, status, user_type, microsoft_tenant_id, created_at, clients(id, name, code)')
+				.order('created_at', { ascending: false }),
 			supabase.from('clients').select('id, code, name').order('name'),
 			supabase.from('projects').select('id, code, name, client_id').order('code'),
-			supabase.from('project_members').select('id, user_id, project_id')
+			supabase.from('project_members').select('id, user_id, project_id'),
+			supabaseAdmin
+				.from('invitations')
+				.select('id, email, full_name, role, user_type, client_id, status, created_at, clients(id, name, code)')
+				.eq('status', 'PENDING')
+				.order('created_at', { ascending: false })
 		]);
 
 		const clients = dbClients || [];
 		const projects = dbProjects || [];
 		const memberships = dbMemberships || [];
+		const invitations = dbInvitations || [];
 
 		if (!dbProfiles || dbProfiles.length === 0) {
 			return {
 				members: [],
+				invitations,
 				clients,
 				projects,
 				currentUserId: user?.id ?? null
@@ -39,6 +50,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 				email: p.email,
 				full_name: p.full_name,
 				role: p.role,
+				status: p.status || 'ACTIVE',
+				user_type: p.user_type || (isClientRole(p.role) ? 'CLIENT' : 'INTERNAL'),
 				client_id: p.client_id,
 				client: clientInfo ?? null,
 				assigned_projects: userProjects,
@@ -46,10 +59,11 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 			};
 		});
 
-		return { members, clients, projects, currentUserId: user?.id ?? null };
+		return { members, invitations, clients, projects, currentUserId: user?.id ?? null };
 	} catch {
 		return {
 			members: [],
+			invitations: [],
 			clients: [],
 			projects: [],
 			currentUserId: null
@@ -324,5 +338,142 @@ export const actions: Actions = {
 		}
 
 		return { success: true, deletedUserId: targetUserId };
+	},
+
+	inviteUser: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const { data: callerProfile } = await supabase.from('profiles').select('role, client_id').eq('id', user.id).single();
+		if (!callerProfile || (callerProfile.role !== 'super_admin' && callerProfile.role !== 'client_admin')) {
+			return fail(403, { error: 'You do not have permission to invite users.' });
+		}
+
+		const formData = await request.formData();
+		const fullName = String(formData.get('full_name') || '').trim();
+		const email = String(formData.get('email') || '').trim().toLowerCase();
+		const role = String(formData.get('role') || 'client_raiser');
+		const clientIdRaw = String(formData.get('client_id') || '').trim();
+		const isClientScopedRole = isClientRole(role);
+		const clientId = clientIdRaw && isClientScopedRole ? clientIdRaw : null;
+		const projectIds = formData.getAll('project_ids').map(String).filter(Boolean);
+
+		if (!fullName || !email) {
+			return fail(400, { error: 'Full name and email address are required.', fullName, email });
+		}
+
+		if (isClientScopedRole && !clientId) {
+			return fail(400, { error: 'Client organization is required for client roles.', fullName, email });
+		}
+
+		if (callerProfile.role === 'client_admin' && clientId !== callerProfile.client_id) {
+			return fail(403, { error: 'Client Admins can only invite users to their own organization.' });
+		}
+
+		const result = await createInvitation({
+			fullName,
+			email,
+			role,
+			clientId,
+			projectIds,
+			createdBy: user.id
+		});
+
+		if ('error' in result) {
+			return fail(400, { error: result.error, fullName, email });
+		}
+
+		await logAuditEvent({
+			organizationId: clientId,
+			actorUserId: user.id,
+			action: 'user_invited',
+			resourceType: 'invitation',
+			resourceId: result.invitationId,
+			newValue: { email, fullName, role, clientId },
+			ipAddress: null,
+			userAgent: null
+		});
+
+		return { success: true, invitationId: result.invitationId };
+	},
+
+	toggleUserStatus: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const { data: callerProfile } = await supabase.from('profiles').select('role, client_id').eq('id', user.id).single();
+		if (!callerProfile || (callerProfile.role !== 'super_admin' && callerProfile.role !== 'client_admin')) {
+			return fail(403, { error: 'You do not have permission to modify user status.' });
+		}
+
+		const formData = await request.formData();
+		const targetUserId = String(formData.get('user_id') || '').trim();
+		const targetStatus = String(formData.get('status') || 'ACTIVE').trim();
+
+		if (!targetUserId || !['ACTIVE', 'SUSPENDED', 'DISABLED'].includes(targetStatus)) {
+			return fail(400, { error: 'Invalid user ID or status.' });
+		}
+
+		if (targetUserId === user.id) {
+			return fail(400, { error: 'You cannot change the status of your own account.' });
+		}
+
+		const { data: targetProfile } = await supabaseAdmin.from('profiles').select('client_id, status, email').eq('id', targetUserId).single();
+		if (!targetProfile) {
+			return fail(404, { error: 'Target user not found.' });
+		}
+
+		if (callerProfile.role === 'client_admin' && targetProfile.client_id !== callerProfile.client_id) {
+			return fail(403, { error: 'Client Admins can only change status of users in their own organization.' });
+		}
+
+		const { error } = await supabaseAdmin
+			.from('profiles')
+			.update({ status: targetStatus })
+			.eq('id', targetUserId);
+
+		if (error) {
+			return fail(500, { error: error.message });
+		}
+
+		await logAuditEvent({
+			organizationId: targetProfile.client_id,
+			actorUserId: user.id,
+			action: 'user_status_changed',
+			resourceType: 'user',
+			resourceId: targetUserId,
+			oldValue: { status: targetProfile.status },
+			newValue: { status: targetStatus, email: targetProfile.email }
+		});
+
+		return { success: true };
+	},
+
+	cancelInvitation: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Not authenticated.' });
+
+		const { data: callerProfile } = await supabase.from('profiles').select('role, client_id').eq('id', user.id).single();
+		if (!callerProfile || (callerProfile.role !== 'super_admin' && callerProfile.role !== 'client_admin')) {
+			return fail(403, { error: 'You do not have permission to revoke invitations.' });
+		}
+
+		const formData = await request.formData();
+		const invitationId = String(formData.get('invitation_id') || '').trim();
+
+		if (!invitationId) {
+			return fail(400, { error: 'Invitation ID is required.' });
+		}
+
+		const { error } = await supabaseAdmin
+			.from('invitations')
+			.delete()
+			.eq('id', invitationId);
+
+		if (error) {
+			return fail(500, { error: error.message });
+		}
+
+		return { success: true };
 	}
 };

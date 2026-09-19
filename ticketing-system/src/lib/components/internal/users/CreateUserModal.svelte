@@ -42,6 +42,7 @@
 	let role = $state<string>('client_raiser');
 	let clientId = $state('');
 	let selectedProjectIds = $state<string[]>([]);
+	let authMode = $state<'sso_invite' | 'password'>('sso_invite');
 
 	$effect(() => {
 		if (selectedClientId) {
@@ -158,7 +159,7 @@
 			<!-- Form -->
 			<form
 				method="POST"
-				action="?/createUser"
+				action={authMode === 'sso_invite' ? '?/inviteUser' : '?/createUser'}
 				use:enhance={() => {
 					isSubmitting = true;
 					errorMessage = null;
@@ -201,6 +202,43 @@
 								Internal Staff
 							</button>
 						</div>
+					</div>
+				{/if}
+
+				<!-- Authentication / Onboarding Method -->
+				<div class="space-y-1.5">
+					<span class="block text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+						Authentication Method <span class="text-[var(--color-error)]">*</span>
+					</span>
+					<div class="grid grid-cols-2 rounded-lg border border-[var(--color-outline-variant)]/60 bg-[var(--color-surface-container)] p-1 text-label-sm font-medium">
+						<button
+							type="button"
+							class="flex items-center justify-center gap-1.5 rounded-md py-1.5 transition-colors cursor-pointer {authMode === 'sso_invite' ? 'bg-[var(--color-surface-container-lowest)] text-blue-700 font-bold shadow-xs' : 'text-[var(--color-on-surface-variant)]'}"
+							onclick={() => (authMode = 'sso_invite')}
+						>
+							<span class="material-symbols-outlined text-[16px]">corporate_fare</span>
+							<span>Microsoft SSO Invite</span>
+						</button>
+						<button
+							type="button"
+							class="flex items-center justify-center gap-1.5 rounded-md py-1.5 transition-colors cursor-pointer {authMode === 'password' ? 'bg-[var(--color-surface-container-lowest)] text-[var(--color-primary)] font-bold shadow-xs' : 'text-[var(--color-on-surface-variant)]'}"
+							onclick={() => (authMode = 'password')}
+						>
+							<span class="material-symbols-outlined text-[16px]">key</span>
+							<span>Direct Password</span>
+						</button>
+					</div>
+				</div>
+
+				{#if authMode === 'sso_invite'}
+					<div class="rounded-lg border border-blue-200 bg-blue-50/80 p-3 text-xs text-blue-900 space-y-1">
+						<div class="flex items-center gap-1.5 font-bold">
+							<span class="material-symbols-outlined text-[16px] text-blue-700">how_to_reg</span>
+							<span>Pre-Registration Allowlist</span>
+						</div>
+						<p class="text-blue-800 leading-relaxed">
+							User will be invited to the Resolv allowlist in <strong>PENDING</strong> status. Access is granted and bound when they click "Sign in with Microsoft".
+						</p>
 					</div>
 				{/if}
 
@@ -292,33 +330,35 @@
 					</select>
 				</div>
 
-				<!-- Password -->
-				<div class="space-y-1.5">
-					<div class="flex items-center justify-between">
-						<label for="user-password" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
-							Password
-						</label>
-						<button
-							type="button"
-							class="text-[11px] font-semibold text-[var(--color-primary)] hover:underline cursor-pointer"
-							onclick={() => (showCustomPassword = !showCustomPassword)}
-						>
-							{showCustomPassword ? 'Use Default Password' : 'Set Custom Password'}
-						</button>
-					</div>
+				<!-- Password (Only for password authentication) -->
+				{#if authMode === 'password'}
+					<div class="space-y-1.5">
+						<div class="flex items-center justify-between">
+							<label for="user-password" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+								Password
+							</label>
+							<button
+								type="button"
+								class="text-[11px] font-semibold text-[var(--color-primary)] hover:underline cursor-pointer"
+								onclick={() => (showCustomPassword = !showCustomPassword)}
+							>
+								{showCustomPassword ? 'Use Default Password' : 'Set Custom Password'}
+							</button>
+						</div>
 
-					<input
-						id="user-password"
-						name="password"
-						type={showCustomPassword ? 'text' : 'password'}
-						required
-						bind:value={password}
-						class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-body-md font-mono text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)] focus:ring-2 focus:ring-[var(--color-primary-container)]/20"
-					/>
-					<p class="text-[11px] text-[var(--color-on-surface-variant)]">
-						Default credentials: <span class="font-mono font-semibold text-[var(--color-primary)]">{password}</span>
-					</p>
-				</div>
+						<input
+							id="user-password"
+							name="password"
+							type={showCustomPassword ? 'text' : 'password'}
+							required
+							bind:value={password}
+							class="w-full rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-body-md font-mono text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary-container)] focus:ring-2 focus:ring-[var(--color-primary-container)]/20"
+						/>
+						<p class="text-[11px] text-[var(--color-on-surface-variant)]">
+							Default credentials: <span class="font-mono font-semibold text-[var(--color-primary)]">{password}</span>
+						</p>
+					</div>
+				{/if}
 
 				<!-- Project Assignment (Optional for internal/client) -->
 				{#if availableProjects.length > 0}

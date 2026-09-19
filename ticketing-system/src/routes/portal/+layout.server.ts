@@ -11,11 +11,27 @@ export const load: LayoutServerLoad = async ({ locals: { supabase, safeGetSessio
 
 	const { data: profile } = await supabase
 		.from('profiles')
-		.select('id, full_name, email, role, client_id, clients(name)')
+		.select('id, full_name, email, role, client_id, status, clients(name, status)')
 		.eq('id', user.id)
 		.single();
 
-	if (!profile || !CLIENT_ROLES.includes(profile.role)) {
+	if (!profile) {
+		await supabase.auth.signOut();
+		throw redirect(303, '/login');
+	}
+
+	if (profile.status !== 'ACTIVE') {
+		await supabase.auth.signOut();
+		throw redirect(303, `/login?error=account_${profile.status.toLowerCase()}`);
+	}
+
+	const clientInfo = Array.isArray(profile.clients) ? profile.clients[0] : profile.clients;
+	if (clientInfo && clientInfo.status !== 'ACTIVE') {
+		await supabase.auth.signOut();
+		throw redirect(303, '/login?error=org_suspended');
+	}
+
+	if (!CLIENT_ROLES.includes(profile.role)) {
 		throw redirect(303, '/login');
 	}
 

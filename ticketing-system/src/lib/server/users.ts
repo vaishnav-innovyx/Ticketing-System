@@ -30,6 +30,7 @@ export async function provisionUser(
 	input: ProvisionInput
 ): Promise<{ userId: string } | { error: string }> {
 	const password = input.password?.trim() || 'ChangeMe123!';
+	const userType = isClientRole(input.role) ? 'CLIENT' : 'INTERNAL';
 
 	const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
 		email: input.email,
@@ -49,6 +50,8 @@ export async function provisionUser(
 		email: input.email,
 		full_name: input.fullName,
 		role: input.role as never,
+		user_type: userType,
+		status: 'ACTIVE',
 		client_id: input.clientId
 	});
 
@@ -65,4 +68,55 @@ export async function provisionUser(
 	}
 
 	return { userId };
+}
+
+export interface InviteUserInput {
+	fullName: string;
+	email: string;
+	role: string;
+	clientId: string | null;
+	projectIds?: string[];
+	createdBy?: string | null;
+}
+
+export async function createInvitation(
+	input: InviteUserInput
+): Promise<{ invitationId: string } | { error: string }> {
+	const userType = isClientRole(input.role) ? 'CLIENT' : 'INTERNAL';
+
+	// Look up client tenant ID if client-scoped
+	let microsoftTenantId: string | null = null;
+	if (input.clientId) {
+		const { data: client } = await supabaseAdmin
+			.from('clients')
+			.select('microsoft_tenant_id')
+			.eq('id', input.clientId)
+			.maybeSingle();
+		microsoftTenantId = client?.microsoft_tenant_id || null;
+	}
+
+	const { data, error } = await supabaseAdmin
+		.from('invitations')
+		.upsert(
+			{
+				email: input.email.toLowerCase().trim(),
+				full_name: input.fullName.trim(),
+				role: input.role as never,
+				user_type: userType,
+				client_id: input.clientId,
+				project_ids: input.projectIds || [],
+				microsoft_tenant_id: microsoftTenantId,
+				status: 'PENDING',
+				created_by: input.createdBy ?? null
+			},
+			{ onConflict: 'email, client_id' }
+		)
+		.select('id')
+		.single();
+
+	if (error || !data) {
+		return { error: error?.message || 'Failed to create user invitation.' };
+	}
+
+	return { invitationId: data.id };
 }

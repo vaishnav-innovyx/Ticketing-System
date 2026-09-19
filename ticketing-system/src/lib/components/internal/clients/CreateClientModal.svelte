@@ -347,6 +347,26 @@
 					</div>
 				</div>
 
+				<!-- Microsoft Entra Tenant ID (SSO) -->
+				<div class="space-y-1.5">
+					<div class="flex items-center justify-between">
+						<label for="client-microsoft-tenant" class="text-label-sm font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)]">
+							Microsoft Entra Tenant ID (Optional)
+						</label>
+						<span class="text-[11px] text-[var(--color-primary)] font-medium">SSO Multi-Tenant</span>
+					</div>
+					<input
+						id="client-microsoft-tenant"
+						name="microsoft_tenant_id"
+						type="text"
+						placeholder="e.g. 72f988bf-86f1-41af-91ab-2d7cd011db47"
+						class="w-full font-mono text-xs rounded-lg border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-3.5 py-2.5 text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)] outline-none focus:border-[var(--color-primary-container)] focus:ring-2 focus:ring-[var(--color-primary-container)]/20"
+					/>
+					<p class="text-[11px] text-[var(--color-on-surface-variant)]">
+						Links this organization to the client's Microsoft 365 Azure AD directory for automatic tenant binding.
+					</p>
+				</div>
+
 				<!-- Optional Initial Project Section -->
 				<div class="rounded-xl border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container-low)] p-3.5 space-y-3">
 					<div class="flex items-center justify-between">

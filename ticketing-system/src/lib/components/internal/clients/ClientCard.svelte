@@ -34,6 +34,8 @@
 		code: string;
 		name: string;
 		seat_quota: number | null;
+		microsoft_tenant_id?: string | null;
+		status?: string;
 		created_at: string;
 		projects: ProjectItem[];
 		members: MemberItem[];
