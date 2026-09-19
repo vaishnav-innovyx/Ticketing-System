@@ -45,6 +45,16 @@ export async function provisionUser(
 
 	const userId = authData.user.id;
 
+	let microsoftTenantId: string | null = null;
+	if (input.clientId) {
+		const { data: client } = await supabaseAdmin
+			.from('clients')
+			.select('microsoft_tenant_id')
+			.eq('id', input.clientId)
+			.maybeSingle();
+		microsoftTenantId = client?.microsoft_tenant_id || null;
+	}
+
 	const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
 		id: userId,
 		email: input.email,
@@ -52,7 +62,8 @@ export async function provisionUser(
 		role: input.role as never,
 		user_type: userType,
 		status: 'ACTIVE',
-		client_id: input.clientId
+		client_id: input.clientId,
+		microsoft_tenant_id: microsoftTenantId
 	});
 
 	if (profileError) {

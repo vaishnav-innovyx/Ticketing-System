@@ -131,13 +131,45 @@ export const GET: RequestHandler = async ({ url, locals: { supabase }, getClient
 			}
 		}
 
-		// A3: Update Microsoft identity binding if missing or user ID sync
-		const updates: { microsoft_tenant_id?: string | null; microsoft_object_id?: string | null } = {};
-		if (!profile.microsoft_tenant_id && tid) updates.microsoft_tenant_id = tid;
-		if (!profile.microsoft_object_id && oid) updates.microsoft_object_id = oid;
+		// A3: Sync user ID and update Microsoft identity binding
+		if (profile.id !== authUser.id) {
+			const oldUserId = profile.id;
 
-		if (Object.keys(updates).length > 0) {
-			await supabaseAdmin.from('profiles').update(updates).eq('id', profile.id);
+			// Re-link project memberships
+			await supabaseAdmin.from('project_members').update({ user_id: authUser.id }).eq('user_id', oldUserId);
+
+			// Re-link tickets and events
+			await Promise.all([
+				supabaseAdmin.from('tickets').update({ raised_by: authUser.id }).eq('raised_by', oldUserId),
+				supabaseAdmin.from('tickets').update({ poc_id: authUser.id }).eq('poc_id', oldUserId),
+				supabaseAdmin.from('ticket_events').update({ actor_id: authUser.id }).eq('actor_id', oldUserId)
+			]);
+
+			// Upsert profile with new authUser.id and clean up old placeholder
+			await supabaseAdmin.from('profiles').upsert({
+				id: authUser.id,
+				email: userEmail,
+				full_name: profile.full_name,
+				role: profile.role,
+				user_type: profile.user_type,
+				client_id: profile.client_id,
+				microsoft_tenant_id: tid || profile.microsoft_tenant_id || null,
+				microsoft_object_id: oid || profile.microsoft_object_id || null,
+				status: profile.status
+			});
+
+			await supabaseAdmin.from('profiles').delete().eq('id', oldUserId);
+			await supabaseAdmin.auth.admin.deleteUser(oldUserId).catch(() => {});
+
+			profile.id = authUser.id;
+		} else {
+			const updates: { microsoft_tenant_id?: string | null; microsoft_object_id?: string | null } = {};
+			if (!profile.microsoft_tenant_id && tid) updates.microsoft_tenant_id = tid;
+			if (!profile.microsoft_object_id && oid) updates.microsoft_object_id = oid;
+
+			if (Object.keys(updates).length > 0) {
+				await supabaseAdmin.from('profiles').update(updates).eq('id', profile.id);
+			}
 		}
 
 		await logAuditEvent({
